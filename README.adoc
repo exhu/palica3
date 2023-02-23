@@ -1,0 +1,44 @@
+= Photo/video collection management tool
+(C) 2022 Yury Benesh
+
+== Overview
+Usable command line tool, and optionally gui. Collects all files, but
+primary usage is for image and video files on removable storage.
+
+== TODO
+* metadata database
+    ** name
+    ** tags (keywords)
+    ** date
+    ** size
+    ** mime-type
+    ** sha256
+
+* collection
+** add
+** remove
+** add file, dir, files from list, ignore hidden files/folders ".*"
+** sync
+
+* sync report
+** collection availability
+** directory existence
+** file existence
+** changes:
+*** file date
+*** file sha256
+*** file type
+
+
+* rich filtering (tags, date, mime) options
+
+== DONE
+Nothing yet.
+
+== Dependencies
+
+* exiftool command line utility
+
+* sqlite library
+
+* any image viewer, e.g. feh or gwenview

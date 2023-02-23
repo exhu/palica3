@@ -1,0 +1,151 @@
+= Primarily a photo/video collection management tool
+(C) 2022 Yury Benesh
+
+== Requirements
+Usable command line tool, and optionally gui.
+
+Offline browsing:
+
+    * thumbnails database
+        ** can be several for different format/size
+    * metadata database
+        ** name
+        ** tags (keywords)
+        ** date
+        ** optional (future): exif/xmp metadata
+        ** undo list (delete, apply/remove tags, rename, move history)
+        ** mime-type
+    * rich filtering (tags, date, mime) options
+
+Objects:
+
+    * media source (collection in digikam)
+    * folder (album in digikam) -- strictly corresponds to fs directory
+    * file (image, video, audio, etc.)
+    * sha256
+    * tags
+    * mime types
+    * date (for fast search)
+
+Update thumbnails on external changes to the underlying media.
+
+Update metadata on adding/removing tags, on external changes.
+
+== Image viewer hacks
+One can create a temp directory e.g. /tmp/filtered-collection/... with
+symbolic links to actual files, and open this directory in gwenview.
+
+== Building the collection
+
+Define supported file types (picture formats, file extensions).
+
+Define what xmp tags/attributes to read and write for custom tagging.
+
+Extract metadata to sidecar xmp files, e.g. with exiftool https://exiftool.org/metafiles.html
+https://exiftool.org/exiftool_pod.html#COPYING-EXAMPLES
+
+== Metadata
+
+NOTE: TODO check if XMP:Subject is enough for darktable, digikam, gwenview.
+
+darktable stores tags as:
+[source,xml]
+----
+<dc:subject>
+    <rdf:Bag>
+     <rdf:li>city</rdf:li>
+     <rdf:li>france</rdf:li>
+     <rdf:li>hotel</rdf:li>
+     <rdf:li>nice</rdf:li>
+    </rdf:Bag>
+   </dc:subject>
+   <lr:hierarchicalSubject>
+    <rdf:Bag>
+     <rdf:li>city</rdf:li>
+     <rdf:li>france</rdf:li>
+     <rdf:li>hotel</rdf:li>
+     <rdf:li>nice</rdf:li>
+    </rdf:Bag>
+----
+
+
+https://exiftool.org/metafiles.html
+
+Read and write xmp sidecars only.
+
+Check if metadata in the sidecar matches the database:
+
+    * add tags exisiting in the database for that file
+    * add new tags from the xmp to the database for that file
+
+"The standard place for putting user created data would be in the XMP tags (specifically XMP:Subject), which includes the IPTC Core/Ext, which is mostly detailed in the IPTC standard link above.  There are also IPTC tags (IPTC:Keywords), which are the much older IPTC IIM/Legacy tags.  Normally you would want to use the XMP tags as that is the modern standard unless there's a program that is part of your workflow that prefers IPTC.
+"
+https://exiftool.org/forum/index.php?topic=12762.0
+
+"exiftool -Subject=Tulips -Subject=Flower FILE
+Note that this will overwrite any previously existing keywords.
+
+If you wanted to add new keywords without overwriting previous ones, you would add a + sign before the equal
+exiftool -Subject+=Tulips -Subject+=Flower FILE "
+https://photo.stackexchange.com/questions/105936/what-is-the-proper-formatting-of-the-subject-tag-in-xmp
+
+
+exiftool -Subject+=france -Subject+=city PA283621.xmp 
+
+exiftool -Subject=aa -Subject=bb tt.xmp
+
+Print existing:
+exiftool -Subject tt.xmp
+
+== Syncronizing
+
+See <<Metadata>>.
+
+Update thumbnail if the original file is changed.
+
+== Further thoughts
+
+Think over the same approach for video and audio files.
+
+== Final tools
+
+Build generic tools, not image-related.
+
+Database management tool:
+
+    * add/remove a collection
+    * update a collection (sync)
+    * add,remove,rename tags (keywords)
+    * copy keywords/tags from file1 to file2
+    * copy, rename, delete file
+    * forget files (remove from db files which may be missing on disk, or about to be deleted)
+    * build file list by tags, date etc.
+    * xmp files are also added to the db, but can be filtered from output
+
+Thumbnails management tool:
+
+    * sync
+    * regenerate
+    * format (webp vs jpegxl?), size options
+
+Thumnails browser with add/remove tags, show metadata, run viewier features.
+
+optional: image viewer accepting a list of files (can be replaced with feh, gwenview)
+
+
+== Dependencies
+
+* exiftool command line utility
+
+* mimetype command (probably non necessary, because exiftool returns mimetype) 
+
+* sqlite library
+
+* any image viewer, e.g. feh or gwenview
+
+== XMP Sidecar rules
+
+Create on demand with exiftool:
+
+    * on adding tags
+    * on user request

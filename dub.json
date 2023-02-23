@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Yury Benesh"
+	],
+	"copyright": "Copyright © 2023, Yury Benesh",
+	"description": "Media catalogue",
+	"license": "GPLv3+",
+	"name": "palica"
+}
