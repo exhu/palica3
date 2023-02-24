@@ -1,12 +1,10 @@
 module palica.dblayer;
 
-import std.typecons;
-
 alias DbId = ulong;
 
 interface DbReadLayer
 {
-    import std.typecons.nullable;
+    import std.typecons : Nullable;
     Nullable!DbId getCollection(string name);
     DbId[] enumCollections();
     // TODO collection interface?
