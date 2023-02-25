@@ -1,6 +1,7 @@
 -- some global metadata
 BEGIN TRANSACTION;
 CREATE TABLE app_info(info_key TEXT UNIQUE NOT NULL, info_value TEXT NOT NULL);
+-- schema version
 INSERT INTO app_info VALUES('db_version', '1');
 -- app must update this field on write operations
 INSERT INTO app_info VALUES('app_version', '1');
@@ -55,7 +56,7 @@ CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT NOT NULL,
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
 -- when adding a new collection, a fake root item must be added with fs_name '/'
 CREATE TABLE dir_entries(id INTEGER PRIMARY KEY, fs_name TEXT NOT NULL,
-    last_mod_time INTEGER NOT NULL,
+    fs_mod_time INTEGER NOT NULL,
     last_sync_time INTEGER NOT NULL);
 
 -- directory to file/subdir mapping (id from dir_entries)
