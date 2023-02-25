@@ -20,6 +20,54 @@ module palica.dblayer;
 /// sqlite INTEGER is signed (up to 8 bytes, i.e. 64-bit max)
 alias DbId = long;
 
+import std.datetime : SysTime;
+import std.stdio : writeln;
+
+version(unittest) mixin template ImplToString()
+{
+    string toString() const @safe
+    {
+        import std.conv : to;
+        string contents = "{";
+        foreach (i; this.tupleof)
+        {
+            contents ~= to!string(i) ~ ",";
+        }
+
+        return contents ~ "}";
+    }
+}
+
+immutable final class Collection
+{
+    DbId id;
+    string coll_name;
+    string fs_path;
+    DbId root_id;
+
+    this(DbId id, string coll_name, string fs_path, DbId root_id)
+    in(coll_name !is null)
+    in(fs_path !is null)
+    {
+        this.id = id;
+        this.coll_name = coll_name;
+        this.fs_path = fs_path;
+        this.root_id = root_id;
+    }
+
+    version(unittest) mixin ImplToString;
+}
+
+unittest
+{
+    auto a = new Collection(1, "aa", "ff", 1);
+    writeln(a.toString);
+
+    import std.digest.sha;
+    auto h = sha256Of("abc");
+    writeln(toHexString!(LetterCase.lower)(h));
+}
+
 interface DbReadLayer
 {
     import std.typecons : Nullable;
@@ -45,9 +93,18 @@ interface DbWriteLayer
             super(format("Collection '%s' with id '%d' already exists.", name, dbId));
         }
     }
+    
+    final class DbError : Exception
+    {
+        this(string msg)
+        {
+            super(msg);
+        }
+    }
 
-    /// Throws CollectionAlreadyExists
-    DbId createCollection(string name, string srcPath);
-    // TODO
+    /// Throws CollectionAlreadyExists, DbError
+    Collection createCollection(string name, string srcPath);
+    // Throws DbError
+    DbId createFakeDirEntry();
     
 }

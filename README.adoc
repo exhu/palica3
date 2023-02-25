@@ -8,6 +8,10 @@ Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
 
 == TODO
+* scan directory tree, build collection
+* make a better cli and usage screen (parse args based on command)
+
+
 * metadata database
     ** name
     ** tags (keywords)

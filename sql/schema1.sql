@@ -50,8 +50,7 @@ CREATE TABLE include_globs(id INTEGER PRIMARY KEY, glob_pattern_id INTEGER UNIQU
 -- collection reference, user name, path on the filesystem, last syncronization
 -- root id from dir_entries table
 CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT NOT NULL,
-    fs_path TEXT NOT NULL,
-    last_sync_time INTEGER NOT NULL, root_id INTEGER NOT NULL);
+    fs_path TEXT NOT NULL, root_id INTEGER NOT NULL);
 
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
 -- when adding a new collection, a fake root item must be added with fs_name '/'

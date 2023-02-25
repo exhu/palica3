@@ -43,14 +43,6 @@ interface FsReadLayer
     InputRange!FsDirEntry dirEntries(string p);
 }
 
-unittest
-{
-    import std.stdio : writeln;
-    
-    writeln("hello test");
-    assert(false);
-}
-
 interface FsWriteLayer
 {
     bool makeDir(string p);
