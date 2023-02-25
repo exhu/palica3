@@ -1,7 +1,9 @@
 = Photo/video collection management tool
-(C) 2022 Yury Benesh
+(C) 2023 Yury Benesh
 
 == Overview
+Distributed under GPLv3+ without any warranty, see file://LICENSE.
+
 Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
 
