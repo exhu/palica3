@@ -41,6 +41,6 @@ Nothing yet.
 
 * exiftool command line utility
 
-* sqlite library
+* sqlite library (libsqlite3-dev)
 
 * any image viewer, e.g. feh or gwenview
