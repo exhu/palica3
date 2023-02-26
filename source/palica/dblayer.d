@@ -100,7 +100,7 @@ interface DbWriteLayer
     }
 
     /// Throws CollectionAlreadyExists, DbError
-    Collection createCollection(string name, string srcPath, ref const DirEntry rootEntry);
+    Collection createCollection(string name, string srcPath, DbId rootId);
     /// Throws DbError
     /// entry.id is ignored.
     DbId createDirEntry(ref const DirEntry entry);

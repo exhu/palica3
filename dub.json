@@ -3,8 +3,10 @@
 		"Yury Benesh"
 	],
 	"copyright": "Copyright © 2023, Yury Benesh",
+	"dependencies": {
+		"d2sqlite3": "~>1.0.0"
+	},
 	"description": "Media catalogue",
 	"license": "GPLv3+",
-	"name": "palica",
-	"libs": ["sqlite3"]
+	"name": "palica"
 }

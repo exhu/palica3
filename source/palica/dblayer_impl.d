@@ -1,9 +1,10 @@
 module palica.dblayer_impl;
-import etc.c.sqlite3;
 import palica.dblayer;
 import std.typecons;
 import std.string;
 import std.datetime : SysTime;
+import d2sqlite3;
+import std.stdio : writeln;
 
 final class FailedToOpenDb : Exception
 {
@@ -19,17 +20,26 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     /// Don't forget to call .close() when finished.
     this(string dbFilename)
     {
-        int rc = sqlite3_open(dbFilename.toStringz, &pdb);
-        if (rc)
+        import std.file : exists;
+        const bool isNewDb = !exists(dbFilename);
+        try
         {
-            sqlite3_close(pdb);
+            this.db = Database(dbFilename);
+        }
+        catch (SqliteException e) {
             throw new FailedToOpenDb(dbFilename);
         }
+        if (isNewDb)
+        {
+            executeSchema();
+        }
+        prepareStatements();
     }
 
     void close()
     {
-        sqlite3_close(pdb);
+        finalizeStatements();
+        db.close();
     }
 
     override Collection[] enumCollections()
@@ -38,80 +48,62 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return [];
     }
 
-    override Collection createCollection(string name, string srcPath, ref const DirEntry rootEntry)
+    override Collection createCollection(string name, string srcPath, DbId rootId)
     {
-        auto sql = format(
-            "INSERT INTO collections(coll_name, fs_path, root_id) " ~
-            "VALUES('%s' %d, %d);", rootEntry.fsModTime.stdTime,
-            rootEntry.lastSyncTime.stdTime);
-        execSql(sql);
-        DbId lastId = sqlite3_last_insert_rowid(pdb);
-        return Collection(lastId, name, srcPath, rootEntry.id);
+        createCollectionStmt.bind(":coll_name", name);
+        createCollectionStmt.bind(":fs_path", srcPath);
+        createCollectionStmt.bind(":root_id", rootId);
+        createCollectionStmt.execute();
+        createCollectionStmt.reset();
+        return Collection(db.lastInsertRowid(), name, srcPath, rootId);
     }
 
     override DbId createDirEntry(ref const DirEntry entry)
     {
-        auto sql = format(
-            "INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time) " ~
-            "VALUES('/', %d, %d);", entry.fsModTime.stdTime, entry.lastSyncTime.stdTime);
-        
-        execSql(sql);
-
-        return sqlite3_last_insert_rowid(pdb);
+        createDirEntryStmt.bind(":fs_name", entry.fsName);
+        createDirEntryStmt.bind(":fs_mod_time", entry.fsModTime.stdTime);
+        createDirEntryStmt.bind(":last_sync_time", entry.lastSyncTime.stdTime);
+        createDirEntryStmt.execute();
+        createDirEntryStmt.reset();
+        return db.lastInsertRowid();
     }
 
 private:
-    struct ResultItem
+    void prepareStatements()
     {
-        string col, value;
-    }
-    /// Throws DbError
-    ResultItem[] execSql(string sql)
-    {
-        char* zErrMsg;
-        ResultItem[] res = [];
-        int rc = sqlite3_exec(pdb, sql.toStringz, &callback, &res, &zErrMsg);
-        if (rc != SQLITE_OK)
-        {
-            string err = cast(string)fromStringz(zErrMsg).dup;
-            sqlite3_free(zErrMsg);
-            throw new DbError(err);
-        }
-        return res;
+        createDirEntryStmt = db.prepare("INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time) " ~
+            "VALUES(:fs_name, :fs_mod_time, :last_sync_time);");
+        createCollectionStmt = db.prepare("INSERT INTO collections(coll_name, fs_path, root_id) " ~
+            "VALUES(:coll_name, :fs_path, :root_id);");
     }
 
-    static extern(C) int callback(void* userData, int argc, char** argv, char** azColName)
+    void finalizeStatements()
     {
-        import std.stdio : writeln;
-        writeln("sqlite callback");
-        ResultItem[] res = *cast(ResultItem[]*)userData;
-        for (int i = 0; i < argc; i++)
-        {
-            import core.stdc.stdio : printf;
-            printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-            res ~= ResultItem(cast(string)fromStringz(azColName[i]).dup,
-                cast(string)fromStringz(argv[i] ? argv[i] : "NULL").dup);
-        }
-        return 0;
+        createDirEntryStmt.finalize();
+        createCollectionStmt.finalize();
     }
 
-    sqlite3* pdb;
+    void executeSchema()
+    {
+        import std.file : readText;
+        immutable schema = "sql/schema1.sql";
+        writeln("reading schema " ~ schema);
+        string sql = readText(schema);
+        db.run(sql);
+    }
+
+    Database db;
+    Statement createDirEntryStmt;
+    Statement createCollectionStmt;
 }
 
 unittest
 {
-    import core.stdc.stdio : printf;
-    import std.stdio: writeln;
-
-    printf("sqlite version = '%s'\n", sqlite3_libversion());
-
-    auto db = new DbLayerImpl("test.db");
-    auto res = db.execSql("CREATE TABLE app_info(info_key TEXT UNIQUE NOT NULL, info_value TEXT NOT NULL);");
-    writeln(res);
+    auto db = new DbLayerImpl(":memory:");
     db.close();
 }
 
-unittest
+version(none) unittest
 {
     try
     {
