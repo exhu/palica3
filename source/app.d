@@ -1,43 +1,32 @@
-import std.stdio : writeln, writefln;
-
 
 int main(string[] args)
 {
-    import std.getopt;
-    import palica.cmdtool : run, LaunchParams, Command;
-
-    immutable Command[string] commandFromName = [
-        "new": Command.newDb,
-    ];
-
-    string commandsInfo()
-    {
-        return "Commands:
-        new -- create new db
-        ";
-    }
-
+    import std.stdio : writeln;
+    import commandr;
+    import palica.cmdtool : run, LaunchParams, Cmd = Command;
+    
     LaunchParams params;
     try
     {
-        auto helpInformation = getopt(
-            args,
-            std.getopt.config.required,
-            "db", "database filename", &params.dbFsName);
-        if (args.length >= 2) params.command = commandFromName[args[1]];
-        if (helpInformation.helpWanted || params.command == Command.unknown)
-        {
-            defaultGetoptPrinter("Palica media catalogue tool.\nUsage: palica <command> [options]\n" ~
-                commandsInfo,
-                helpInformation.options);
-            return 1;
-        }
+        auto parsed = new Program("palica", "1.0")
+            .summary("Media catalogue tool.")
+            .author("Yury Benesh")
+            .add(new Option(null, "db", "main database").required())
+            .add(new Command("add")
+                .summary("add collection")
+                .add(new Argument("path", "path and filename")))
+            .parseArgs(args);
+        
+        params.dbFsName = parsed.option("db");
+        assert(params.dbFsName !is null);
+        parsed.on("add", (parsedArgs) {
+            params.command = Cmd.addCollection;
+        });
     }
-    catch (GetOptException e)
+    catch(InvalidArgumentsException e)
     {
         writeln(e.msg);
         return 1;
     }
-
     return run(params);
 }
