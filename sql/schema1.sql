@@ -43,15 +43,12 @@ COMMIT TRANSACTION;
 -- empty tables means include every directory entry that doesn't match exclude_globs
 CREATE TABLE include_globs(id INTEGER PRIMARY KEY, glob_pattern_id INTEGER UNIQUE NOT NULL);
 
--- (date)time values are the total hnsecs from midnight, January 1st, 1 A.D. UTC. 
--- An hnsec (hecto-nanosecond) is 100 nanoseconds. There are 10,000,000 hnsecs in a second.
--- https://dlang.org/phobos/std_datetime_systime.html#.SysTime.stdTime
-
 -- collection reference, user name, path on the filesystem, last syncronization
 -- root id from dir_entries table
 CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT NOT NULL,
     fs_path TEXT NOT NULL, root_id INTEGER NOT NULL);
 
+-- timestamps in nanoseconds since unix epoch
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
 -- when adding a new collection
 CREATE TABLE dir_entries(id INTEGER PRIMARY KEY, fs_name TEXT NOT NULL,
