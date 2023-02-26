@@ -14,3 +14,5 @@ palica-test-*
 *.o
 *.obj
 *.lst
+target/
+
