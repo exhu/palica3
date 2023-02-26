@@ -53,7 +53,7 @@ CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT NOT NULL,
     fs_path TEXT NOT NULL, root_id INTEGER NOT NULL);
 
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
--- when adding a new collection, a fake root item must be added with fs_name '/'
+-- when adding a new collection
 CREATE TABLE dir_entries(id INTEGER PRIMARY KEY, fs_name TEXT NOT NULL,
     fs_mod_time INTEGER NOT NULL,
     last_sync_time INTEGER NOT NULL);
@@ -64,6 +64,6 @@ CREATE TABLE dir_to_sub(directory_id INTEGER NOT NULL, entry_id INTEGER NOT NULL
 -- subject tags, e.g. 'family'
 CREATE TABLE subject_tags(id INTEGER PRIMARY KEY, tag_value TEXT UNIQUE NOT NULL);
 
--- assign tags to directory entries, collection is tagged by the fake root element
+-- assign tags to directory entries, collection is tagged by the root element
 CREATE TABLE tag_to_dir_entry(subject_tag_id INTEGER NOT NULL, dir_entry_id INTEGER NOT NULL,
     UNIQUE(subject_tag_id, dir_entry_id));

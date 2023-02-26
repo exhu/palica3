@@ -3,6 +3,7 @@ import etc.c.sqlite3;
 import palica.dblayer;
 import std.typecons;
 import std.string;
+import std.datetime : SysTime;
 
 final class FailedToOpenDb : Exception
 {
@@ -31,29 +32,32 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         sqlite3_close(pdb);
     }
 
-    override Nullable!DbId getCollection(string name)
-    {
-        // TODO
-        return Nullable!DbId();
-    }
-
-    override DbId[] enumCollections()
+    override Collection[] enumCollections()
     {
         // TODO
         return [];
     }
 
-    override Collection createCollection(string name, string srcPath)
+    override Collection createCollection(string name, string srcPath, ref const DirEntry rootEntry)
     {
-        // TODO create fake root dir_entry
-        // TODO create collection
-
-        return null;
+        auto sql = format(
+            "INSERT INTO collections(coll_name, fs_path, root_id) " ~
+            "VALUES('%s' %d, %d);", rootEntry.fsModTime.stdTime,
+            rootEntry.lastSyncTime.stdTime);
+        execSql(sql);
+        DbId lastId = sqlite3_last_insert_rowid(pdb);
+        return Collection(lastId, name, srcPath, rootEntry.id);
     }
 
-    override DbId createFakeDirEntry()
+    override DbId createDirEntry(ref const DirEntry entry)
     {
-        return 0;
+        auto sql = format(
+            "INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time) " ~
+            "VALUES('/', %d, %d);", entry.fsModTime.stdTime, entry.lastSyncTime.stdTime);
+        
+        execSql(sql);
+
+        return sqlite3_last_insert_rowid(pdb);
     }
 
 private:

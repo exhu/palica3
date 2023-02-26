@@ -22,6 +22,7 @@ alias DbId = long;
 
 import std.datetime : SysTime;
 import std.stdio : writeln;
+import std.file;
 
 version(unittest) mixin template ImplToString()
 {
@@ -38,29 +39,27 @@ version(unittest) mixin template ImplToString()
     }
 }
 
-immutable final class Collection
+immutable struct Collection
 {
     DbId id;
-    string coll_name;
-    string fs_path;
-    DbId root_id;
-
-    this(DbId id, string coll_name, string fs_path, DbId root_id)
-    in(coll_name !is null)
-    in(fs_path !is null)
-    {
-        this.id = id;
-        this.coll_name = coll_name;
-        this.fs_path = fs_path;
-        this.root_id = root_id;
-    }
+    string collName;
+    string fsPath;
+    DbId rootId;
 
     version(unittest) mixin ImplToString;
 }
 
+immutable struct DirEntry
+{
+    DbId id;
+    string fsName;
+    SysTime fsModTime;
+    SysTime lastSyncTime;
+}
+
 unittest
 {
-    auto a = new Collection(1, "aa", "ff", 1);
+    auto a = Collection(1, "aa", "ff", 1);
     writeln(a.toString);
 
     import std.digest.sha;
@@ -70,9 +69,7 @@ unittest
 
 interface DbReadLayer
 {
-    import std.typecons : Nullable;
-    Nullable!DbId getCollection(string name);
-    DbId[] enumCollections();
+    Collection[] enumCollections();
     // TODO collection interface?
 }
 
@@ -103,8 +100,9 @@ interface DbWriteLayer
     }
 
     /// Throws CollectionAlreadyExists, DbError
-    Collection createCollection(string name, string srcPath);
-    // Throws DbError
-    DbId createFakeDirEntry();
+    Collection createCollection(string name, string srcPath, ref const DirEntry rootEntry);
+    /// Throws DbError
+    /// entry.id is ignored.
+    DbId createDirEntry(ref const DirEntry entry);
     
 }
