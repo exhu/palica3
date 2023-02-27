@@ -8,15 +8,28 @@ module palica.helpers;
 
 import std.datetime : SysTime, Duration, DateTime, UTC;
 
-long unixEpochNanoseconds(SysTime st)
+private immutable sysTimeUnixEpochHns = SysTime.fromUnixTime(0, UTC()).stdTime;
+
+long unixEpochNanoseconds(SysTime st) pure nothrow
 {
-    return (st.stdTime - SysTime.fromUnixTime(0, UTC()).stdTime)*100;
+    return (st.stdTime - sysTimeUnixEpochHns)*100;
+}
+
+SysTime sysTimeFromUnixEpochNanoseconds(long ns) pure nothrow
+{
+    long stdTime = ns / 100 + sysTimeUnixEpochHns;
+    return SysTime(stdTime, UTC());
 }
 
 unittest
 {
     import std.stdio : writeln;
-    auto k = unixEpochNanoseconds(SysTime(DateTime(1970,1,1), UTC()));
+    auto unixEpoch = SysTime(DateTime(1970,1,1), UTC());
+    auto k = unixEpochNanoseconds(unixEpoch);
     writeln("nanos =", k, SysTime.fromUnixTime(0, UTC()));
     assert(k == 0);
+    auto backw = sysTimeFromUnixEpochNanoseconds(k);
+    assert(backw == unixEpoch);
+    writeln(backw, " == ", unixEpoch);
+    
 }

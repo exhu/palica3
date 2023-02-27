@@ -23,6 +23,7 @@ alias DbId = long;
 import std.datetime : SysTime;
 import std.stdio : writeln;
 import std.file;
+import std.typecons;
 
 version(unittest) mixin template ImplToString()
 {
@@ -46,7 +47,7 @@ immutable struct Collection
     string fsPath;
     DbId rootId;
 
-    version(unittest) mixin ImplToString;
+    //version(unittest) mixin ImplToString;
 }
 
 immutable struct DirEntry
@@ -60,7 +61,7 @@ immutable struct DirEntry
 unittest
 {
     auto a = Collection(1, "aa", "ff", 1);
-    writeln(a.toString);
+    writeln(a);
 
     import std.digest.sha;
     auto h = sha256Of("abc");
@@ -71,6 +72,7 @@ interface DbReadLayer
 {
     Collection[] enumCollections();
     // TODO collection interface?
+    Nullable!DirEntry getDirEntryById(DbId id);
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly
