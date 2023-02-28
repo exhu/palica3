@@ -19,10 +19,13 @@ final class FailedToOpenDb : Exception
     }
 }
 
-final class DbLayerImpl : DbReadLayer, DbWriteLayer
+final class DbData
 {
-    /// Throws FailedToOpenDb
-    /// Don't forget to call .close() when finished.
+    Database db;
+    Statement createDirEntryStmt;
+    Statement createCollectionStmt;
+    Statement selectDirEntryByIdStmt;
+    
     this(string dbFilename)
     {
         import std.file : exists;
@@ -38,13 +41,43 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         {
             executeSchema();
         }
-        prepareStatements();
+
+        createDirEntryStmt = db.prepare("INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time) " ~
+            "VALUES(:fs_name, :fs_mod_time, :last_sync_time);");
+        createCollectionStmt = db.prepare("INSERT INTO collections(coll_name, fs_path, root_id) " ~
+            "VALUES(:coll_name, :fs_path, :root_id);");
+        selectDirEntryByIdStmt = db.prepare("SELECT fs_name, fs_mod_time, last_sync_time FROM dir_entries " ~
+            "WHERE id = ?");
+    }
+
+    private void executeSchema()
+    {
+        import std.file : readText;
+        immutable schema = "sql/schema1.sql";
+        writeln("reading schema " ~ schema);
+        string sql = readText(schema);
+        db.run(sql);
+    }
+    
+    ~this()
+    {
+        writeln("~this DbData ", this, " ", db);
+    }
+}
+
+final class DbLayerImpl : DbReadLayer, DbWriteLayer
+{
+    /// Throws FailedToOpenDb
+    /// Don't forget to call .close() when finished.
+    this(string dbFilename)
+    {
+        this.db = new DbData(dbFilename);
     }
 
     void close()
     {
-        finalizeStatements();
-        db.close();
+        writeln("DbLayerImpl.close");
+        db.release();
     }
 
     override Collection[] enumCollections()
@@ -55,29 +88,29 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     override Collection createCollection(string name, string srcPath, DbId rootId)
     {
-        createCollectionStmt.bind(":coll_name", name);
-        createCollectionStmt.bind(":fs_path", srcPath);
-        createCollectionStmt.bind(":root_id", rootId);
-        createCollectionStmt.execute();
-        createCollectionStmt.reset();
-        return Collection(db.lastInsertRowid(), name, srcPath, rootId);
+        db.createCollectionStmt.bind(":coll_name", name);
+        db.createCollectionStmt.bind(":fs_path", srcPath);
+        db.createCollectionStmt.bind(":root_id", rootId);
+        db.createCollectionStmt.execute();
+        db.createCollectionStmt.reset();
+        return Collection(db.db.lastInsertRowid(), name, srcPath, rootId);
     }
 
     override DbId createDirEntry(ref const DirEntry entry)
     {
-        createDirEntryStmt.bind(":fs_name", entry.fsName);
-        createDirEntryStmt.bind(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime));
-        createDirEntryStmt.bind(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime));
-        createDirEntryStmt.execute();
-        createDirEntryStmt.reset();
-        return db.lastInsertRowid();
+        db.createDirEntryStmt.bind(":fs_name", entry.fsName);
+        db.createDirEntryStmt.bind(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime));
+        db.createDirEntryStmt.bind(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime));
+        db.createDirEntryStmt.execute();
+        db.createDirEntryStmt.reset();
+        return db.db.lastInsertRowid();
     }
 
     override Nullable!DirEntry getDirEntryById(DbId id)
     {
-        selectDirEntryByIdStmt.bind(1, id);
-        auto r = selectDirEntryByIdStmt.execute();
-        scope(exit) selectDirEntryByIdStmt.reset();
+        db.selectDirEntryByIdStmt.bind(1, id);
+        auto r = db.selectDirEntryByIdStmt.execute();
+        scope(exit) db.selectDirEntryByIdStmt.reset();
         if (!r.empty())
         {
             auto row = r.front();
@@ -86,47 +119,26 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
                 sysTimeFromUnixEpochNanoseconds(row.peek!long(2)));
             return Nullable!DirEntry(e);
         }
-        
         return Nullable!DirEntry();
     }
-
+    
+    ~this()
+    {
+        writeln("~this impl");
+    }
+    
 private:
-    void prepareStatements()
-    {
-        createDirEntryStmt = db.prepare("INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time) " ~
-            "VALUES(:fs_name, :fs_mod_time, :last_sync_time);");
-        createCollectionStmt = db.prepare("INSERT INTO collections(coll_name, fs_path, root_id) " ~
-            "VALUES(:coll_name, :fs_path, :root_id);");
-        selectDirEntryByIdStmt = db.prepare("SELECT fs_name, fs_mod_time, last_sync_time FROM dir_entries " ~
-            "WHERE id = ?");
-    }
-
-    void finalizeStatements()
-    {
-        createDirEntryStmt.finalize();
-        createCollectionStmt.finalize();
-        selectDirEntryByIdStmt.finalize();
-    }
-
-    void executeSchema()
-    {
-        import std.file : readText;
-        immutable schema = "sql/schema1.sql";
-        writeln("reading schema " ~ schema);
-        string sql = readText(schema);
-        db.run(sql);
-    }
-
-    Database db;
-    Statement createDirEntryStmt;
-    Statement createCollectionStmt;
-    Statement selectDirEntryByIdStmt;
+    Unique!DbData db;
 }
 
 unittest
 {
     auto db = new DbLayerImpl(":memory:");
-    scope(exit) db.close();
+    scope(exit) 
+    {
+        writeln("scope exit KKW");
+        db.close();
+    }
 
     import std.datetime : Clock, UTC;
     auto e1 = DirEntry(0, "my", Clock.currTime(UTC()), Clock.currTime(UTC()));

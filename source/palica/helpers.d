@@ -8,16 +8,16 @@ module palica.helpers;
 
 import std.datetime : SysTime, Duration, DateTime, UTC;
 
-private immutable sysTimeUnixEpochHns = SysTime.fromUnixTime(0, UTC()).stdTime;
+private immutable unixEpochHns = SysTime.fromUnixTime(0, UTC()).stdTime;
 
 long unixEpochNanoseconds(SysTime st) pure nothrow
 {
-    return (st.stdTime - sysTimeUnixEpochHns)*100;
+    return (st.stdTime - unixEpochHns)*100;
 }
 
 SysTime sysTimeFromUnixEpochNanoseconds(long ns) pure nothrow
 {
-    long stdTime = ns / 100 + sysTimeUnixEpochHns;
+    long stdTime = ns / 100 + unixEpochHns;
     return SysTime(stdTime, UTC());
 }
 
