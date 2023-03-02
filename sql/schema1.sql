@@ -1,17 +1,17 @@
 -- some global metadata
 BEGIN TRANSACTION;
-CREATE TABLE app_info(info_key TEXT UNIQUE NOT NULL, info_value TEXT NOT NULL);
+CREATE TABLE app_info(id INTEGER PRIMARY KEY, info_key TEXT UNIQUE NOT NULL, info_value TEXT NOT NULL);
 -- schema version
-INSERT INTO app_info VALUES('db_version', '1');
+INSERT INTO app_info(info_key, info_value) VALUES('db_version', '1');
 -- app must update this field on write operations
-INSERT INTO app_info VALUES('app_version', '1');
+INSERT INTO app_info(info_key, info_value) VALUES('app_version', '1');
 COMMIT TRANSACTION;
 
 -- settings used to populate the db, e.g. include/exclude glob masks, mime types
 BEGIN TRANSACTION;
-CREATE TABLE settings(setting_key TEXT UNIQUE NOT NULL, setting_value TEXT NOT NULL);
+CREATE TABLE settings(id INTEGER PRIMARY KEY, setting_key TEXT UNIQUE NOT NULL, setting_value TEXT NOT NULL);
 -- rewrite sidecar .xmp file on adding/removing tags
-INSERT INTO settings VALUES('update_xmp', '1');
+INSERT INTO settings(setting_key, setting_value) VALUES('update_xmp', '1');
 COMMIT TRANSACTION;
 
 -- general storage for glob patterns
@@ -56,11 +56,15 @@ CREATE TABLE dir_entries(id INTEGER PRIMARY KEY, fs_name TEXT NOT NULL,
     last_sync_time INTEGER NOT NULL);
 
 -- directory to file/subdir mapping (id from dir_entries)
-CREATE TABLE dir_to_sub(directory_id INTEGER NOT NULL, entry_id INTEGER NOT NULL UNIQUE);
+CREATE TABLE dir_to_sub(id INTEGER PRIMARY KEY, directory_id INTEGER NOT NULL, entry_id INTEGER NOT NULL UNIQUE);
 
 -- subject tags, e.g. 'family'
 CREATE TABLE subject_tags(id INTEGER PRIMARY KEY, tag_value TEXT UNIQUE NOT NULL);
 
 -- assign tags to directory entries, collection is tagged by the root element
-CREATE TABLE tag_to_dir_entry(subject_tag_id INTEGER NOT NULL, dir_entry_id INTEGER NOT NULL,
+CREATE TABLE tag_to_dir_entry(id INTEGER PRIMARY KEY, subject_tag_id INTEGER NOT NULL, dir_entry_id INTEGER NOT NULL,
     UNIQUE(subject_tag_id, dir_entry_id));
+
+-- last metadata edit
+CREATE TABLE last_edit(id INTEGER PRIMARY KEY, dir_entry_id INTEGER NOT NULL UNIQUE,
+    date_time INTEGER NOT NULL UNIQUE);
