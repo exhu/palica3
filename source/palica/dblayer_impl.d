@@ -98,9 +98,9 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     override Collection createCollection(string name, string srcPath, DbId rootId)
     {
         auto id = idFromExec(db.createCollectionStmt, [
-            new BindPair!string(":coll_name", name),
-            new BindPair!string(":fs_path", srcPath),
-            new BindPair!DbId(":root_id", rootId),
+            bindPair(":coll_name", name),
+            bindPair(":fs_path", srcPath),
+            bindPair(":root_id", rootId),
         ]);
         return Collection(id, name, srcPath, rootId);
     }
@@ -108,9 +108,9 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     override DbId createDirEntry(ref const DirEntry entry)
     {
         return idFromExec(db.createDirEntryStmt, [
-            new BindPair!string(":fs_name", entry.fsName),
-            new BindPair!long(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime)),
-            new BindPair!long(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime)),
+            bindPair(":fs_name", entry.fsName),
+            bindPair(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime)),
+            bindPair(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime)),
             ]);
         }
 
@@ -133,8 +133,8 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     override DbId mapDirEntryToParentDir(DbId entryId, DbId parentId)
     {
         return idFromExec(db.mapDirEntryToParentStmt, [
-            new BindPair!(DbId)(":directory_id", parentId),
-            new BindPair!(DbId)(":entry_id", entryId),
+            bindPair(":directory_id", parentId),
+            bindPair(":entry_id", entryId),
             ]);
     }
     
