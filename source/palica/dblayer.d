@@ -106,5 +106,7 @@ interface DbWriteLayer
     /// Throws DbError
     /// entry.id is ignored.
     DbId createDirEntry(ref const DirEntry entry);
+
+    DbId mapDirEntryToParentDir(DbId entryId, DbId parentId);
     
 }

@@ -25,6 +25,7 @@ final class DbData
     Statement createDirEntryStmt;
     Statement createCollectionStmt;
     Statement selectDirEntryByIdStmt;
+    Statement mapDirEntryToParentStmt;
     
     this(string dbFilename)
     {
@@ -48,6 +49,8 @@ final class DbData
             "VALUES(:coll_name, :fs_path, :root_id);");
         selectDirEntryByIdStmt = db.prepare("SELECT fs_name, fs_mod_time, last_sync_time FROM dir_entries " ~
             "WHERE id = ?");
+        mapDirEntryToParentStmt = db.prepare("INSERT INTO dir_to_sub(directory_id, entry_id) VALUES(" ~
+            ":directory_id, :entry_id);");
     }
 
     private void executeSchema()
@@ -122,6 +125,15 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return Nullable!DirEntry();
     }
     
+    override DbId mapDirEntryToParentDir(DbId entryId, DbId parentId)
+    {
+        db.mapDirEntryToParentStmt.bind(":directory_id", parentId);
+        db.mapDirEntryToParentStmt.bind(":entry_id", parentId);
+        db.mapDirEntryToParentStmt.execute();
+        db.mapDirEntryToParentStmt.reset();
+        return db.db.lastInsertRowid();
+    }
+    
     ~this()
     {
         writeln("~this impl");
@@ -157,6 +169,8 @@ unittest
     assert(e2.fsName == f2.get().fsName);
     assert(e1.fsModTime == f1.get().fsModTime);
     assert(e2.lastSyncTime == f2.get().lastSyncTime);
+    
+    assert(db.mapDirEntryToParentDir(id2, id) == 1);
 }
 
 version(none) unittest
