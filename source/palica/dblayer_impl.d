@@ -1,6 +1,7 @@
 module palica.dblayer_impl;
 import palica.dblayer;
 import palica.helpers;
+import palica.sqlhelpers;
 
 import std.typecons;
 import std.string;
@@ -62,6 +63,11 @@ final class DbData
         db.run(sql);
     }
     
+    DbId lastRowId()
+    {
+        return db.lastInsertRowid();
+    }
+    
     ~this()
     {
         writeln("~this DbData ", this, " ", db);
@@ -91,23 +97,22 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     override Collection createCollection(string name, string srcPath, DbId rootId)
     {
-        db.createCollectionStmt.bind(":coll_name", name);
-        db.createCollectionStmt.bind(":fs_path", srcPath);
-        db.createCollectionStmt.bind(":root_id", rootId);
-        db.createCollectionStmt.execute();
-        db.createCollectionStmt.reset();
-        return Collection(db.db.lastInsertRowid(), name, srcPath, rootId);
+        auto id = idFromExec(db.createCollectionStmt, [
+            new BindPair!string(":coll_name", name),
+            new BindPair!string(":fs_path", srcPath),
+            new BindPair!DbId(":root_id", rootId),
+        ]);
+        return Collection(id, name, srcPath, rootId);
     }
 
     override DbId createDirEntry(ref const DirEntry entry)
     {
-        db.createDirEntryStmt.bind(":fs_name", entry.fsName);
-        db.createDirEntryStmt.bind(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime));
-        db.createDirEntryStmt.bind(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime));
-        db.createDirEntryStmt.execute();
-        db.createDirEntryStmt.reset();
-        return db.db.lastInsertRowid();
-    }
+        return idFromExec(db.createDirEntryStmt, [
+            new BindPair!string(":fs_name", entry.fsName),
+            new BindPair!long(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime)),
+            new BindPair!long(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime)),
+            ]);
+        }
 
     override Nullable!DirEntry getDirEntryById(DbId id)
     {
@@ -127,11 +132,16 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     
     override DbId mapDirEntryToParentDir(DbId entryId, DbId parentId)
     {
-        db.mapDirEntryToParentStmt.bind(":directory_id", parentId);
-        db.mapDirEntryToParentStmt.bind(":entry_id", parentId);
-        db.mapDirEntryToParentStmt.execute();
-        db.mapDirEntryToParentStmt.reset();
-        return db.db.lastInsertRowid();
+        return idFromExec(db.mapDirEntryToParentStmt, [
+            new BindPair!(DbId)(":directory_id", parentId),
+            new BindPair!(DbId)(":entry_id", entryId),
+            ]);
+    }
+    
+    private DbId idFromExec(ref Statement stmt, BindPairBase[] pairs)
+    {
+        bindPairsAndExec(stmt, pairs);
+        return db.lastRowId();
     }
     
     ~this()
