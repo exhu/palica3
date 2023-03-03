@@ -18,21 +18,40 @@
 
 module palica.fslayer;
 
-// TODO interfaces to abstract fs access
+// interfaces to abstract fs access
 // for easier testing
 
-class FsDirEntry
+final immutable class FsDirEntry
 {
     import std.datetime : SysTime;
     
     string name;
     ulong size;
     SysTime modDateTime;
+    bool isDir;
+    
+    static FsDirEntry newFile(string aName, ulong aSize, SysTime aModTime)
+    {
+        return new FsDirEntry(aName, aSize, aModTime, false);
+    }
+
+    static FsDirEntry newDir(string aName, SysTime aModTime)
+    {
+        return new FsDirEntry(aName, 0, aModTime, true);
+    }
+    
+    private this(string aName, ulong aSize, SysTime aModTime, bool aIsDir)
+    {
+        name = aName;
+        size = aSize;
+        modDateTime = aModTime;
+        isDir = aIsDir;
+    }
+
 }
 
 interface FsReadLayer
 {
-    import std.range.interfaces : InputRange;
     import std.datetime : SysTime;
 
     bool pathExists(string p);
@@ -40,7 +59,8 @@ interface FsReadLayer
     bool isDir(string p);
     bool isSymlink(string p);
     SysTime modificationDate(string p);
-    InputRange!FsDirEntry dirEntries(string p);
+    /// not recursive
+    FsDirEntry[] dirEntries(string p);
 }
 
 interface FsWriteLayer
