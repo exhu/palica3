@@ -1,12 +1,12 @@
 module palica.sqlhelpers;
 import d2sqlite3;
 
-BindPairBase bindPair(string name, long value)
+BindPairBase bindPair(string name, long value) pure nothrow
 {
     return new BindPair!long(name, value);
 }
 
-BindPairBase bindPair(string name, string value)
+BindPairBase bindPair(string name, string value) pure nothrow
 {
     return new BindPair!string(name, value);
 }
@@ -16,7 +16,7 @@ abstract class BindPairBase
     void bind(ref Statement stmt);
 }
 
-final class BindPair(T) : BindPairBase
+private final class BindPair(T) : BindPairBase
 {
     string name;
     T value;

@@ -68,3 +68,9 @@ CREATE TABLE tag_to_dir_entry(id INTEGER PRIMARY KEY, subject_tag_id INTEGER NOT
 -- last metadata edit
 CREATE TABLE last_edit(id INTEGER PRIMARY KEY, dir_entry_id INTEGER NOT NULL UNIQUE,
     date_time INTEGER NOT NULL UNIQUE);
+
+-- e.g. image/jxl
+CREATE TABLE mime_types(id INTEGER PRIMARY KEY, mime_value TEXT NOT NULL UNIQUE);
+CREATE TABLE mime_to_dir_entry(id INTEGER PRIMARY KEY,
+    mime_type_id INTEGER NOT NULL, dir_entry_id INTEGER NOT NULL,
+    UNIQUE(mime_type_id, dir_entry_id));
