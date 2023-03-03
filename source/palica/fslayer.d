@@ -21,7 +21,7 @@ module palica.fslayer;
 // interfaces to abstract fs access
 // for easier testing
 
-final immutable class FsDirEntry
+immutable struct FsDirEntry
 {
     import std.datetime : SysTime;
     
@@ -32,12 +32,12 @@ final immutable class FsDirEntry
     
     static FsDirEntry newFile(string aName, ulong aSize, SysTime aModTime)
     {
-        return new FsDirEntry(aName, aSize, aModTime, false);
+        return FsDirEntry(aName, aSize, aModTime, false);
     }
 
     static FsDirEntry newDir(string aName, SysTime aModTime)
     {
-        return new FsDirEntry(aName, 0, aModTime, true);
+        return FsDirEntry(aName, 0, aModTime, true);
     }
     
     private this(string aName, ulong aSize, SysTime aModTime, bool aIsDir)
