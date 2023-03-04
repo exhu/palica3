@@ -63,3 +63,16 @@ T structFromRow(T)(ref Row row)
     }
     return result;
 }
+
+T[] structsFromRows(T)(ref ResultRange rows)
+{
+    T[] result;
+
+    foreach (ref Row r; rows)
+    {
+        auto e = structFromRow!T(r);
+        result ~= e;
+    }
+
+    return result;
+}

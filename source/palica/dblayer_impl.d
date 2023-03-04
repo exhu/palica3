@@ -7,7 +7,7 @@ import std.typecons;
 import std.string;
 import std.datetime : SysTime;
 import d2sqlite3;
-import std.stdio : writeln;
+import std.stdio : writeln, stderr;
 import core.internal.gc.impl.conservative.gc;
 import std.encoding;
 import std.conv : to;
@@ -28,6 +28,7 @@ final class DbData
     Statement selectDirEntryByIdStmt;
     Statement mapDirEntryToParentStmt;
     Statement dirEntriesFromParentStmt;
+    Statement getCollectionsStmt;
 
     this(string dbFilename)
     {
@@ -63,6 +64,9 @@ final class DbData
         dirEntriesFromParentStmt = db.prepare(
             "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir FROM dir_entries e JOIN " ~
                 "dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
+        
+        getCollectionsStmt = db.prepare("SELECT id, coll_name, fs_path, root_id " ~
+            "FROM collections;");
     }
 
     private void executeSchema()
@@ -70,7 +74,7 @@ final class DbData
         import std.file : readText;
 
         immutable schema = "sql/schema1.sql";
-        writeln("reading schema " ~ schema);
+        debug stderr.writeln("reading schema " ~ schema);
         string sql = readText(schema);
         db.run(sql);
     }
@@ -82,7 +86,7 @@ final class DbData
 
     ~this()
     {
-        writeln("~this DbData ", this, " ", db);
+        debug stderr.writeln("~this DbData ", this, " ", db);
     }
 }
 
@@ -97,7 +101,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     void close()
     {
-        writeln("DbLayerImpl.close");
+        debug stderr.writeln("DbLayerImpl.close");
         db.release();
     }
 
@@ -136,7 +140,6 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         if (!r.empty())
         {
             auto row = r.front();
-            //writeln("row = ", row);
             auto e = structFromRow!DirEntry(row);
             r.popFront();
             assert(r.empty());
@@ -160,15 +163,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
             db.dirEntriesFromParentStmt.reset();
 
         auto rows = db.dirEntriesFromParentStmt.execute();
-        DirEntry[] result;
-
-        foreach (ref Row r; rows)
-        {
-            auto e = structFromRow!DirEntry(r);
-            result ~= e;
-        }
-
-        return result;
+        return structsFromRows!DirEntry(rows);
     }
 
     private DbId idFromExec(ref Statement stmt, BindPairBase[] pairs)
@@ -179,7 +174,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     ~this()
     {
-        writeln("~this impl");
+        debug stderr.writeln("~this impl");
     }
 
 private:
