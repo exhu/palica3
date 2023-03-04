@@ -48,20 +48,16 @@ T structFromRow(T)(ref Row row)
 {
     import std.datetime : SysTime;
     T result;
-    //import std.stdio : writeln;
-    //writeln("row = ", row);
     foreach(i, ref f; result.tupleof)
     {
         static if (is(typeof(f) == SysTime))
         {
             auto t = sysTimeFromUnixEpochNanoseconds(row.peek!(long)(i));
-            //writeln("col ", i, " = ", t);
             f = t;
         }
         else
         {
             auto v = row.peek!(typeof(f))(i);
-            //writeln("col ", i, " = ", v);
             f = v;
         }
     }

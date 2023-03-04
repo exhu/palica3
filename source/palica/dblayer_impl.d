@@ -62,7 +62,7 @@ final class DbData
         // need to select from dir_entries all where id == entry_id from dir_to_sub
         dirEntriesFromParentStmt = db.prepare(
             "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir FROM dir_entries e JOIN " ~
-                "dir_to_sub d ON d.entry_id = e.id where d.id = ?;");
+                "dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
     }
 
     private void executeSchema()
@@ -156,6 +156,9 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     override DirEntry[] getDirEntriesOfParent(DbId id)
     {
         db.dirEntriesFromParentStmt.bind(1, id);
+        scope (exit)
+            db.dirEntriesFromParentStmt.reset();
+
         auto rows = db.dirEntriesFromParentStmt.execute();
         DirEntry[] result;
 
@@ -216,6 +219,17 @@ unittest
     auto subs = db.getDirEntriesOfParent(id);
     assert(subs.length == 1);
     assert(subs[0].fsName == "second");
+
+    auto e3 = DirEntry(0, "third", Clock.currTime(UTC()), Clock.currTime(UTC()), false);
+    auto id3 = db.createDirEntry(e3);
+    assert(id3 != id2);
+    assert(db.mapDirEntryToParentDir(id3, id) == 2);
+
+    auto subs2 = db.getDirEntriesOfParent(id);
+    writeln("subs2=", subs2);
+    assert(subs2.length == 2);
+    assert((subs2[0].fsName == "second") || (subs2[1].fsName == "second"));
+    assert((subs2[0].fsName == "third") || (subs2[1].fsName == "third"));
 }
 
 version (none) unittest
