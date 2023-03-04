@@ -60,6 +60,7 @@ interface FsReadLayer
     SysTime modificationDate(string p);
     /// not recursive
     FsDirEntry[] dirEntries(string p);
+    FsDirEntry dirEntry(string p);
 }
 
 interface FsWriteLayer

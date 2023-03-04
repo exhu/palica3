@@ -45,7 +45,7 @@ CREATE TABLE include_globs(id INTEGER PRIMARY KEY, glob_pattern_id INTEGER UNIQU
 
 -- collection reference, user name, path on the filesystem, last syncronization
 -- root id from dir_entries table
-CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT NOT NULL,
+CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT UNIQUE NOT NULL,
     fs_path TEXT NOT NULL, root_id INTEGER NOT NULL);
 
 -- timestamps in nanoseconds since unix epoch
