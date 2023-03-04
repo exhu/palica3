@@ -36,6 +36,8 @@ primary usage is for image and video files on removable storage.
 * rich filtering (tags, date, mime) options
 
 == DONE
+* basic db operations (collection, direntry objects)
+* basic fs operations (directory entry info)
 * replace direct sqlite3 calls with d2sqlite3
 * make a better cli and usage screen (parse args based on command)
 
