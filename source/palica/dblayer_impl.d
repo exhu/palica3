@@ -107,8 +107,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     override Collection[] enumCollections()
     {
-        // TODO
-        return [];
+        return bindAllAndExec!Collection(db.getCollectionsStmt);
     }
 
     override Collection createCollection(string name, string srcPath, DbId rootId)
@@ -158,12 +157,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     override DirEntry[] getDirEntriesOfParent(DbId id)
     {
-        db.dirEntriesFromParentStmt.bind(1, id);
-        scope (exit)
-            db.dirEntriesFromParentStmt.reset();
-
-        auto rows = db.dirEntriesFromParentStmt.execute();
-        return structsFromRows!DirEntry(rows);
+        return bindAllAndExec!(DirEntry)(db.dirEntriesFromParentStmt, id);
     }
 
     private DbId idFromExec(ref Statement stmt, BindPairBase[] pairs)
@@ -225,6 +219,10 @@ unittest
     assert(subs2.length == 2);
     assert((subs2[0].fsName == "second") || (subs2[1].fsName == "second"));
     assert((subs2[0].fsName == "third") || (subs2[1].fsName == "third"));
+    
+    auto colls = db.enumCollections();
+    assert(colls.length == 1);
+    assert(colls[0].collName == "mycoll");
 }
 
 version (none) unittest

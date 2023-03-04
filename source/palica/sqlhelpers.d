@@ -76,3 +76,11 @@ T[] structsFromRows(T)(ref ResultRange rows)
 
     return result;
 }
+
+T[] bindAllAndExec(T, Args...)(ref Statement stmt, Args args)
+{
+    stmt.bindAll(args);
+    scope(exit) stmt.reset();
+    auto rows = stmt.execute();
+    return structsFromRows!T(rows);
+}
