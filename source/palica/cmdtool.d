@@ -29,6 +29,7 @@ private:
 int newDb(LaunchParams params)
 {
     import std.stdio : writeln;
+
     writeln("new db!!!");
     return 0;
 }

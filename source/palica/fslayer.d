@@ -24,12 +24,12 @@ module palica.fslayer;
 immutable struct FsDirEntry
 {
     import std.datetime : SysTime;
-    
+
     string name;
     ulong size;
     SysTime modDateTime;
     bool isDir;
-    
+
     static FsDirEntry newFile(string aName, ulong aSize, SysTime aModTime)
     {
         return FsDirEntry(aName, aSize, aModTime, false);
@@ -39,7 +39,7 @@ immutable struct FsDirEntry
     {
         return FsDirEntry(aName, 0, aModTime, true);
     }
-    
+
     private this(string aName, ulong aSize, SysTime aModTime, bool aIsDir)
     {
         name = aName;

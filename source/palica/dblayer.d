@@ -20,16 +20,12 @@ module palica.dblayer;
 /// sqlite INTEGER is signed (up to 8 bytes, i.e. 64-bit max)
 alias DbId = long;
 
-import std.datetime : SysTime;
-import std.stdio : writeln;
-import std.file;
-import std.typecons;
-
-version(unittest) mixin template ImplToString()
+version (unittest) mixin template ImplToString()
 {
     string toString() const @safe
     {
         import std.conv : to;
+
         string contents = "{";
         foreach (i; this.tupleof)
         {
@@ -52,6 +48,8 @@ struct Collection
 
 struct DirEntry
 {
+    import std.datetime : SysTime;
+
     DbId id;
     string fsName;
     SysTime fsModTime;
@@ -61,10 +59,13 @@ struct DirEntry
 
 unittest
 {
+    import std.stdio : writeln;
+
     auto a = Collection(1, "aa", "ff", 1);
     writeln(a);
 
     import std.digest.sha;
+
     auto h = sha256Of("abc");
     writeln(toHexString!(LetterCase.lower)(h));
 }
@@ -90,10 +91,11 @@ interface DbWriteLayer
         this(string name, DbId dbId)
         {
             import std.string : format;
+
             super(format("Collection '%s' with id '%d' already exists.", name, dbId));
         }
     }
-    
+
     final class DbError : Exception
     {
         this(string msg)
@@ -109,5 +111,4 @@ interface DbWriteLayer
     DbId createDirEntry(ref const DirEntry entry);
 
     DbId mapDirEntryToParentDir(DbId entryId, DbId parentId);
-    
 }

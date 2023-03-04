@@ -12,7 +12,7 @@ private immutable unixEpochHns = SysTime.fromUnixTime(0, UTC()).stdTime;
 
 long unixEpochNanoseconds(SysTime st) pure nothrow
 {
-    return (st.stdTime - unixEpochHns)*100;
+    return (st.stdTime - unixEpochHns) * 100;
 }
 
 SysTime sysTimeFromUnixEpochNanoseconds(long ns) pure nothrow
@@ -24,12 +24,13 @@ SysTime sysTimeFromUnixEpochNanoseconds(long ns) pure nothrow
 unittest
 {
     import std.stdio : writeln;
-    auto unixEpoch = SysTime(DateTime(1970,1,1), UTC());
+
+    auto unixEpoch = SysTime(DateTime(1970, 1, 1), UTC());
     auto k = unixEpochNanoseconds(unixEpoch);
     writeln("nanos =", k, SysTime.fromUnixTime(0, UTC()));
     assert(k == 0);
     auto backw = sysTimeFromUnixEpochNanoseconds(k);
     assert(backw == unixEpoch);
     writeln(backw, " == ", unixEpoch);
-    
+
 }

@@ -7,7 +7,7 @@ interface ScanningEvents
 {
     // just added to db
     void onNewDirEntry(ref const DirEntry dir);
-    
+
     // updated db entry
     void onChangedDirEntry(ref const DirEntry dir);
 }
@@ -25,19 +25,20 @@ struct CollBuilder
         dbWrite = aDbWrite;
         fsRead = aFsRead;
     }
-    
+
     Collection createCollection(string name, string path)
     {
         if (!fsRead.pathExists(path))
         {
-            throw new Exception("Cannot create collection '" ~
-                name ~ "' -- cannot read path '" ~ path ~ "'");
+            throw new Exception(
+                "Cannot create collection '" ~
+                    name ~ "' -- cannot read path '" ~ path ~ "'");
         }
-        
+
         // TODO
         return Collection();
     }
-    
+
     void syncCollection(const ref Collection col)
     {
         // TODO

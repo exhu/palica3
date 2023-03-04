@@ -3,14 +3,10 @@ import palica.dblayer;
 import palica.helpers;
 import palica.sqlhelpers;
 
-import std.typecons;
-import std.string;
-import std.datetime : SysTime;
 import d2sqlite3;
 import std.stdio : writeln, stderr;
-import core.internal.gc.impl.conservative.gc;
-import std.encoding;
 import std.conv : to;
+import std.typecons : Unique;
 
 final class FailedToOpenDb : Exception
 {
@@ -64,9 +60,10 @@ final class DbData
         dirEntriesFromParentStmt = db.prepare(
             "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir FROM dir_entries e JOIN " ~
                 "dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
-        
-        getCollectionsStmt = db.prepare("SELECT id, coll_name, fs_path, root_id " ~
-            "FROM collections;");
+
+        getCollectionsStmt = db.prepare(
+            "SELECT id, coll_name, fs_path, root_id " ~
+                "FROM collections;");
     }
 
     private void executeSchema()
@@ -219,7 +216,7 @@ unittest
     assert(subs2.length == 2);
     assert((subs2[0].fsName == "second") || (subs2[1].fsName == "second"));
     assert((subs2[0].fsName == "third") || (subs2[1].fsName == "third"));
-    
+
     auto colls = db.enumCollections();
     assert(colls.length == 1);
     assert(colls[0].collName == "mycoll");

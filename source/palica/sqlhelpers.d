@@ -21,7 +21,7 @@ private final class BindPair(T) : BindPairBase
 {
     string name;
     T value;
-    
+
     this(string n, T v)
     {
         name = n;
@@ -34,9 +34,9 @@ private final class BindPair(T) : BindPairBase
     }
 }
 
-void bindPairsAndExec(ref Statement stmt,  BindPairBase[] pairs)
+void bindPairsAndExec(ref Statement stmt, BindPairBase[] pairs)
 {
-    foreach(p; pairs)
+    foreach (p; pairs)
     {
         p.bind(stmt);
     }
@@ -47,8 +47,9 @@ void bindPairsAndExec(ref Statement stmt,  BindPairBase[] pairs)
 T structFromRow(T)(ref Row row)
 {
     import std.datetime : SysTime;
+
     T result;
-    foreach(i, ref f; result.tupleof)
+    foreach (i, ref f; result.tupleof)
     {
         static if (is(typeof(f) == SysTime))
         {
@@ -80,7 +81,8 @@ T[] structsFromRows(T)(ref ResultRange rows)
 T[] bindAllAndExec(T, Args...)(ref Statement stmt, Args args)
 {
     stmt.bindAll(args);
-    scope(exit) stmt.reset();
+    scope (exit)
+        stmt.reset();
     auto rows = stmt.execute();
     return structsFromRows!T(rows);
 }

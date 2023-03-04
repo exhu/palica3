@@ -2,14 +2,12 @@ module palica.fslayer_impl;
 
 import palica.fslayer;
 
-import std.typecons : Nullable;
-
 final class FsLayerImpl : FsReadLayer
 {
     static import std.file;
     import std.datetime : SysTime;
-    
-    
+    import std.typecons : Nullable;
+
     override bool pathExists(string p)
     {
         return std.file.exists(p);
@@ -29,7 +27,7 @@ final class FsLayerImpl : FsReadLayer
     {
         return std.file.timeLastModified(p);
     }
-    
+
     private Nullable!FsDirEntry fsDirEntryFrom(ref std.file.DirEntry d)
     {
         // check for broken symlink
@@ -50,7 +48,7 @@ final class FsLayerImpl : FsReadLayer
     override FsDirEntry[] dirEntries(string p)
     {
         FsDirEntry[] result;
-        foreach(d; std.file.dirEntries(p, std.file.SpanMode.shallow, false))
+        foreach (d; std.file.dirEntries(p, std.file.SpanMode.shallow, false))
         {
             auto dsEntry = fsDirEntryFrom(d);
             if (!dsEntry.isNull())
@@ -60,7 +58,7 @@ final class FsLayerImpl : FsReadLayer
         }
         return result;
     }
-    
+
     override FsDirEntry dirEntry(string p)
     {
         auto fEntry = std.file.DirEntry(p);
@@ -88,13 +86,15 @@ unittest
     assert(l.isDir == false);
     auto sql = fs.dirEntry("sql");
     assert(sql.isDir == true);
-    
+
     import std.algorithm.searching : any;
+
     auto entries = fs.dirEntries("./");
     assert(any!q{a.name == "sample-data"}(entries) == true);
     // adjust if directory contents changes
     assert(entries.length > 3);
 
     import std.stdio : writeln;
+
     writeln("entries=", entries);
 }
