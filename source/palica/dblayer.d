@@ -40,7 +40,7 @@ version(unittest) mixin template ImplToString()
     }
 }
 
-immutable struct Collection
+struct Collection
 {
     DbId id;
     string collName;
@@ -50,7 +50,7 @@ immutable struct Collection
     //version(unittest) mixin ImplToString;
 }
 
-immutable struct DirEntry
+struct DirEntry
 {
     DbId id;
     string fsName;

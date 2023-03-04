@@ -1,5 +1,6 @@
 module palica.sqlhelpers;
 import d2sqlite3;
+import palica.helpers;
 
 BindPairBase bindPair(string name, long value) pure nothrow
 {
@@ -45,14 +46,24 @@ void bindPairsAndExec(ref Statement stmt,  BindPairBase[] pairs)
 
 T structFromRow(T)(ref Row row)
 {
-    import std.conv;
+    import std.datetime : SysTime;
     T result;
-    foreach(i, f; result.tupleof)
+    //import std.stdio : writeln;
+    //writeln("row = ", row);
+    foreach(i, ref f; result.tupleof)
     {
-        if (typeof(f) is long || typeof(f) is string)
-            f = row.peek!(i);
+        static if (is(typeof(f) == SysTime))
+        {
+            auto t = sysTimeFromUnixEpochNanoseconds(row.peek!(long)(i));
+            //writeln("col ", i, " = ", t);
+            f = t;
+        }
         else
-            throw new Error("unsupported type for structFromRow: " ~ to!string(typeof(f)));
+        {
+            auto v = row.peek!(typeof(f))(i);
+            //writeln("col ", i, " = ", v);
+            f = v;
+        }
     }
     return result;
 }

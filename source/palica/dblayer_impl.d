@@ -53,7 +53,7 @@ final class DbData
             "INSERT INTO collections(coll_name, fs_path, root_id) " ~
                 "VALUES(:coll_name, :fs_path, :root_id);");
         selectDirEntryByIdStmt = db.prepare(
-            "SELECT fs_name, fs_mod_time, last_sync_time, is_dir FROM dir_entries " ~
+            "SELECT id, fs_name, fs_mod_time, last_sync_time, is_dir FROM dir_entries " ~
                 "WHERE id = ?");
         mapDirEntryToParentStmt = db.prepare(
             "INSERT INTO dir_to_sub(directory_id, entry_id) VALUES(" ~
@@ -138,10 +138,10 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         if (!r.empty())
         {
             auto row = r.front();
-            auto e = DirEntry(id, row.peek!string(0),
-                sysTimeFromUnixEpochNanoseconds(row.peek!long(1)),
-                sysTimeFromUnixEpochNanoseconds(row.peek!long(2)),
-                row.peek!long(3) ? true : false);
+            //writeln("row = ", row);
+            auto e = structFromRow!DirEntry(row);
+            r.popFront();
+            assert(r.empty());
             return e;
         }
         throw new Exception("no DirEntry with id=" ~ to!string(id));
@@ -166,8 +166,8 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         {
             //id, fs_name, fs_mod_time, last_sync_time, is_dir
             //DirEntry e(r.peek!long(0), r.peek!string(1), 
-
-
+            auto e = structFromRow!(DirEntry)(r);
+            result ~= e;
         }
 
         return result;
