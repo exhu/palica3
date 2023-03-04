@@ -10,7 +10,7 @@ import d2sqlite3;
 import std.stdio : writeln;
 import core.internal.gc.impl.conservative.gc;
 import std.encoding;
-import std.conv: to;
+import std.conv : to;
 
 final class FailedToOpenDb : Exception
 {
@@ -59,12 +59,10 @@ final class DbData
             "INSERT INTO dir_to_sub(directory_id, entry_id) VALUES(" ~
                 ":directory_id, :entry_id);");
 
-        // TODO need to select from dir_entries all where id == entry_id from dir_to_sub
-        /*
+        // need to select from dir_entries all where id == entry_id from dir_to_sub
         dirEntriesFromParentStmt = db.prepare(
-            "SELECT id, fs_name, fs_mod_time, " ~
-                "last_sync_time, is_dir FROM dir_entries WHERE directory_id = ?");
-                */
+            "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir FROM dir_entries e JOIN " ~
+                "dir_to_sub d ON d.entry_id = e.id where d.id = ?;");
     }
 
     private void executeSchema()
@@ -161,12 +159,9 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         auto rows = db.dirEntriesFromParentStmt.execute();
         DirEntry[] result;
 
-        // TODO parse, convert time
         foreach (ref Row r; rows)
         {
-            //id, fs_name, fs_mod_time, last_sync_time, is_dir
-            //DirEntry e(r.peek!long(0), r.peek!string(1), 
-            auto e = structFromRow!(DirEntry)(r);
+            auto e = structFromRow!DirEntry(r);
             result ~= e;
         }
 
@@ -217,6 +212,10 @@ unittest
     assert(e2.lastSyncTime == f2.lastSyncTime);
 
     assert(db.mapDirEntryToParentDir(id2, id) == 1);
+
+    auto subs = db.getDirEntriesOfParent(id);
+    assert(subs.length == 1);
+    assert(subs[0].fsName == "second");
 }
 
 version (none) unittest
