@@ -57,7 +57,6 @@ interface FsReadLayer
     bool pathExists(string p);
     bool isFile(string p);
     bool isDir(string p);
-    bool isSymlink(string p);
     SysTime modificationDate(string p);
     /// not recursive
     FsDirEntry[] dirEntries(string p);

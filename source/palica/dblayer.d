@@ -56,6 +56,7 @@ immutable struct DirEntry
     string fsName;
     SysTime fsModTime;
     SysTime lastSyncTime;
+    bool isDir;
 }
 
 unittest
@@ -71,8 +72,8 @@ unittest
 interface DbReadLayer
 {
     Collection[] enumCollections();
-    // TODO collection interface?
-    Nullable!DirEntry getDirEntryById(DbId id);
+    DirEntry getDirEntryById(DbId id);
+    DirEntry[] getDirEntriesOfParent(DbId id);
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly

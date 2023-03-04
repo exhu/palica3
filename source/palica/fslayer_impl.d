@@ -23,11 +23,6 @@ final class FsLayerImpl : FsReadLayer
         return std.file.isDir(p);
     }
 
-    override bool isSymlink(string p)
-    {
-        return std.file.isSymlink(p);
-    }
-
     override SysTime modificationDate(string p)
     {
         return std.file.timeLastModified(p);

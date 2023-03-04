@@ -42,3 +42,17 @@ void bindPairsAndExec(ref Statement stmt,  BindPairBase[] pairs)
     stmt.execute();
     stmt.reset();
 }
+
+T structFromRow(T)(ref Row row)
+{
+    import std.conv;
+    T result;
+    foreach(i, f; result.tupleof)
+    {
+        if (typeof(f) is long || typeof(f) is string)
+            f = row.peek!(i);
+        else
+            throw new Error("unsupported type for structFromRow: " ~ to!string(typeof(f)));
+    }
+    return result;
+}
