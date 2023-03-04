@@ -8,11 +8,7 @@ Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
 
 == TODO
-* replace direct sqlite3 calls with d2sqlite3
 * scan directory tree, build collection
-* make a better cli and usage screen (parse args based on command)
-
-
 * metadata database
     ** name
     ** tags (keywords)
@@ -40,7 +36,8 @@ primary usage is for image and video files on removable storage.
 * rich filtering (tags, date, mime) options
 
 == DONE
-Nothing yet.
+* replace direct sqlite3 calls with d2sqlite3
+* make a better cli and usage screen (parse args based on command)
 
 == Dependencies
 
