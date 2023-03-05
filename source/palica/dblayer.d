@@ -79,6 +79,8 @@ interface DbReadLayer
     DirEntry getDirEntryById(DbId id);
     DirEntry[] getDirEntriesOfParent(DbId id);
     Nullable!Collection getCollectionByName(string name);
+    // TODO
+    //Collection[] getCollectionsWithSamePath(string path);
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly

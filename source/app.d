@@ -30,6 +30,7 @@ int main(string[] args)
             .author("Yury Benesh")
             .add(new Option(null, "db", "main database").required())
             .add(new Flag("v", "verbose", "verbose"))
+            .add(new Flag("y", "yes", "do not ask confirmations"))
             .add(new Command("add")
                     .summary("add collection")
                     .add(new Argument("name", "collection name"))
@@ -41,11 +42,12 @@ int main(string[] args)
                     .add(new Argument("name", "collection name")))
             .parseArgs(args);
 
-        parsed.on("add", (ProgramArgs parsedArgs) {
-                result = collectionAdd(parsedArgs.option("db"),
-                    parsedArgs.arg("name"),
-                    parsedArgs.arg("path"),
-                    parsedArgs.flag("verbose"));
+        parsed.on("add", (ProgramArgs args) {
+                result = collectionAdd(args.option("db"),
+                    args.arg("name"),
+                    args.arg("path"),
+                    args.flag("verbose"),
+                    !args.flag("yes"));
             })
             .on("list", (args) {
                     result = collectionList(args.option("db"), args.flag("verbose"));

@@ -24,13 +24,26 @@ import palica.dblayer;
 import palica.fslayer_impl;
 import palica.fsdb_helpers;
 
-int collectionAdd(string dbFilename, string name, string path, bool verbose)
+private bool continueWithDupPath(DbReadLayer db, string path, bool ask)
+{
+    // TODO normalize path, find in db collections with same path
+    // TODO prompt for continuation
+    return true;
+}
+
+int collectionAdd(string dbFilename, string name, string path, bool verbose, bool ask)
 {
     writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename, path);
     auto fs = new FsLayerImpl();
     auto db = new DbLayerImpl(dbFilename);
     scope (exit)
         db.close();
+    
+    if (!continueWithDupPath(db, path, ask))
+    {
+        stderr.writeln("Abort for similar collection path.");
+        return 1;
+    }
 
     long entries = 1;
     auto listener = new class CollectionListener
