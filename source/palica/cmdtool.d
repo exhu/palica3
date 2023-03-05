@@ -1,3 +1,20 @@
+/+
+    palica media catalogue program
+    Copyright (C) 2023 Yury Benesh
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
++/
 module palica.cmdtool;
 
 import std.stdio : writefln, writeln;
@@ -41,8 +58,22 @@ int collectionTree(string dbFilename, string name)
     return 0;
 }
 
-int collectionList(string dbFilename)
+int collectionList(string dbFilename, bool verbose)
 {
-    // TODO
+    auto db = new DbLayerImpl(dbFilename);
+    scope (exit)
+        db.close();
+
+    writefln("Collections in \"%s\":", dbFilename);
+    auto cols = db.enumCollections();
+    foreach (ref Collection c; cols)
+    {
+        if (verbose)
+            writefln("%d, \"%s\", \"%s\", root_id:%d", c.id, c.collName,
+                c.fsPath, c.rootId);
+        else
+            writefln("\"%s\": \"%s\"", c.collName, c.fsPath);
+    }
+
     return 0;
 }
