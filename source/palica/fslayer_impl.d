@@ -33,14 +33,14 @@ final class FsLayerImpl : FsReadLayer
         // check for broken symlink
         if (std.file.exists(d.name) && !std.file.isSymlink(d.name))
         {
-            import std.path : baseName;
+            //import std.path : baseName;
 
-            auto base = baseName(d.name);
+            //auto base = baseName(d.name);
             auto lastModTime = d.timeLastModified;
             if (d.isDir)
-                return Nullable!FsDirEntry(FsDirEntry.newDir(base, lastModTime));
+                return Nullable!FsDirEntry(FsDirEntry.newDir(d.name, lastModTime));
             else
-                return Nullable!FsDirEntry(FsDirEntry.newFile(base, d.size, lastModTime));
+                return Nullable!FsDirEntry(FsDirEntry.newFile(d.name, d.size, lastModTime));
         }
         return Nullable!(FsDirEntry)();
     }
@@ -95,7 +95,7 @@ unittest
     import std.algorithm.searching : any;
 
     auto entries = fs.dirEntries("./");
-    assert(any!q{a.name == "sample-data"}(entries) == true);
+    assert(any!q{a.name == "./sample-data"}(entries) == true);
     // adjust if directory contents changes
     assert(entries.length > 3);
 
