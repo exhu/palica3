@@ -8,7 +8,14 @@ Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
 
 == TODO
-* scan directory tree, build collection
+* collection
+** add, warn if there're collections with the same source path
+** remove
+** add file, dir, files from list, ignore hidden files/folders ".*"
+** sync, warn if there're collections with the same source path
+** support media detection for collections from the same source path, e.g. for /cdrom
+via fs uuid (e.g. blkid)
+
 * metadata database
     ** name
     ** tags (keywords)
@@ -16,12 +23,6 @@ primary usage is for image and video files on removable storage.
     ** size
     ** mime-type
     ** sha256
-
-* collection
-** add
-** remove
-** add file, dir, files from list, ignore hidden files/folders ".*"
-** sync
 
 * sync report
 ** collection availability
@@ -38,6 +39,7 @@ primary usage is for image and video files on removable storage.
 * parallel processing
 
 == DONE
+* scan directory tree, build collection
 * basic db operations (collection, direntry objects)
 * basic fs operations (directory entry info)
 * replace direct sqlite3 calls with d2sqlite3

@@ -8,8 +8,8 @@ DirEntry dirEntryFromFsDirEntry(FsDirEntry fsEntry)
     import palica.helpers : sysTimeNowUtc;
     import std.path : baseName;
 
-    return DirEntry(0, fsEntry.name.baseName(), fsEntry.modDateTime, sysTimeNowUtc(),
-        fsEntry.isDir, cast(long) fsEntry.size);
+    return DirEntry(0, fsEntry.name.baseName(), fsEntry.modDateTime,
+        sysTimeNowUtc(), fsEntry.isDir, cast(long) fsEntry.size);
 }
 
 void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0)

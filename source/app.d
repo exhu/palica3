@@ -2,28 +2,44 @@ int main(string[] args)
 {
     import std.stdio : writeln;
     import commandr;
-    import palica.cmdtool : run, LaunchParams, Cmd = Command;
+    import palica.cmdtool;
+    
+    int result = 1;
 
-    LaunchParams params;
     try
     {
-        auto parsed = new Program("palica", "1.0")
+        ProgramArgs parsed = new Program("palica", "1.0")
             .summary("Media catalogue tool.")
             .author("Yury Benesh")
             .add(new Option(null, "db", "main database").required())
             .add(new Command("add")
                     .summary("add collection")
-                    .add(new Argument("path", "path and filename")))
+                    .add(new Argument("name", "collection name"))
+                    .add(new Argument("path", "path to directory")))
+            .add(new Command("list")
+                    .summary("list collections"))
+            .add(new Command("tree")
+                    .summary("list collection files")
+                    .add(new Argument("name", "collection name")))
             .parseArgs(args);
 
-        params.dbFsName = parsed.option("db");
-        assert(params.dbFsName !is null);
-        parsed.on("add", (parsedArgs) { params.command = Cmd.addCollection; });
+        parsed.on("add", (parsedArgs) {
+                result = collectionAdd(parsedArgs.option("db"),
+                    parsedArgs.arg("name"),
+                    parsedArgs.arg("path"));
+            })
+            .on("list", (parsedArgs) {
+                    result = collectionList(parsedArgs.option("db"));
+            })
+            .on("tree", (parsedArgs) {
+                    result = collectionTree(parsedArgs.option("db"),
+                    parsedArgs.arg("name"));
+            });
     }
     catch (InvalidArgumentsException e)
     {
         writeln(e.msg);
         return 1;
     }
-    return run(params);
+    return result;
 }

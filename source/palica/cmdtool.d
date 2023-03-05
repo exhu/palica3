@@ -1,35 +1,45 @@
 module palica.cmdtool;
 
-public enum Command
+import std.stdio : writefln, writeln;
+import palica.collbuilder;
+import palica.dblayer_impl;
+import palica.dblayer;
+import palica.fslayer_impl;
+import palica.fsdb_helpers;
+
+int collectionAdd(string dbFilename, string name, string path)
 {
-    unknown,
-    newDb,
-    listCollections,
-    addCollection,
+    writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename, path);
+    auto fs = new FsLayerImpl();
+    auto db = new DbLayerImpl(dbFilename);
+    scope (exit)
+        db.close();
+
+    auto cb = CollBuilder(db, fs);
+    auto col = cb.createCollection(name, path);
+    long entries = 1;
+    auto listener = new class CollectionListener
+    {
+        override void onNewDirEntry(ref const DirEntry e)
+        {
+            writefln("Found %s", e.fsName);
+            entries += 1;
+        }
+    };
+
+    cb.populateDirEntriesInDepth(col.rootId, path, listener);
+    writefln("Finished with %d entries.", entries);
+    return 0;
 }
 
-public struct LaunchParams
+int collectionTree(string dbFilename, string name)
 {
-    Command command;
-    string dbFsName;
+    // TODO
+    return 0;
 }
 
-public int run(LaunchParams params)
+int collectionList(string dbFilename)
 {
-    alias CmdFunc = int function(LaunchParams p);
-    immutable CmdFunc[Command] commands = [
-        Command.newDb: &newDb,
-    ];
-
-    return commands[params.command](params);
-}
-
-private:
-
-int newDb(LaunchParams params)
-{
-    import std.stdio : writeln;
-
-    writeln("new db!!!");
+    // TODO
     return 0;
 }

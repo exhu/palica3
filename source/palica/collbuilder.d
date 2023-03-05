@@ -29,10 +29,10 @@ struct CollBuilder
 
     Collection createCollection(string name, string path)
     {
-        import std.path : absolutePath;
+        import std.path : absolutePath, buildNormalizedPath;
         import palica.fsdb_helpers : dirEntryFromFsDirEntry;
 
-        immutable srcPath = path.absolutePath();
+        immutable srcPath = path.absolutePath().buildNormalizedPath();
         if (!fsRead.pathExists(srcPath))
         {
             throw new Exception(

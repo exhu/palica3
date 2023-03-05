@@ -227,6 +227,8 @@ unittest
     auto colls = db.enumCollections();
     assert(colls.length == 1);
     assert(colls[0].collName == "mycoll");
+
+    auto coll2 = db.createCollection("mycoll", "srcpath", id);
 }
 
 version (none) unittest
