@@ -16,7 +16,7 @@ final class FailedToOpenDb : Exception
     }
 }
 
-final class DbData
+private final class DbData
 {
     Database db;
     Statement createDirEntryStmt;
@@ -174,6 +174,10 @@ private:
 
 unittest
 {
+    writeln("DbLayerImpl long test start.");
+    scope (exit)
+        writeln("DbLayerImpl long test end.");
+
     auto db = new DbLayerImpl(":memory:");
     scope (exit)
     {

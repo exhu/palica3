@@ -2,6 +2,7 @@ module palica.collbuilder;
 
 import palica.dblayer;
 import palica.fslayer;
+import std.stdio : writeln;
 
 interface ScanningEvents
 {
@@ -19,33 +20,60 @@ interface ScanningEvents
 
 struct CollBuilder
 {
-    this(DbReadLayer aDbRead, DbWriteLayer aDbWrite, FsReadLayer aFsRead)
+    this(DbWriteLayer aDbWrite, FsReadLayer aFsRead)
     {
-        dbRead = aDbRead;
         dbWrite = aDbWrite;
         fsRead = aFsRead;
     }
 
     Collection createCollection(string name, string path)
     {
-        if (!fsRead.pathExists(path))
+        import std.path : absolutePath;
+        import palica.fsdb_helpers : dirEntryFromFsDirEntry;
+
+        immutable srcPath = path.absolutePath();
+        if (!fsRead.pathExists(srcPath))
         {
             throw new Exception(
                 "Cannot create collection '" ~
-                    name ~ "' -- cannot read path '" ~ path ~ "'");
+                    name ~ "' -- cannot read path '" ~ srcPath ~ "'");
         }
 
-        // TODO
-        return Collection();
+        FsDirEntry fsEntry = fsRead.dirEntry(srcPath);
+        auto dirEnt = dirEntryFromFsDirEntry(fsEntry);
+        dirEnt.id = dbWrite.createDirEntry(dirEnt);
+        auto col = dbWrite.createCollection(name, srcPath, dirEnt.id);
+        return col;
     }
 
+    /* will go to separate module
     void syncCollection(const ref Collection col)
     {
         // TODO
     }
+    */
 
 private:
-    DbReadLayer dbRead;
     DbWriteLayer dbWrite;
     FsReadLayer fsRead;
+}
+
+unittest
+{
+    writeln("CollBuilder tests start.");
+    scope (exit)
+        writeln("CollBuilder tests end.");
+    import palica.dblayer_impl;
+    import palica.fslayer_impl;
+
+    auto db = new DbLayerImpl(":memory:");
+    scope (exit)
+        db.close();
+
+    auto fs = new FsLayerImpl;
+
+    auto cb = CollBuilder(db, fs);
+    auto col = cb.createCollection("sample-col", "sample-data");
+    writeln("col=", col);
+
 }

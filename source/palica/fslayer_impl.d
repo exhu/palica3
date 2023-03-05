@@ -73,6 +73,11 @@ final class FsLayerImpl : FsReadLayer
 
 unittest
 {
+    import std.stdio : writeln;
+
+    writeln("FsLayerImpl start.");
+    scope (exit)
+        writeln("FsLayerImpl end.");
     auto fs = new FsLayerImpl();
     auto l = fs.dirEntry("LICENSE");
 
@@ -93,8 +98,6 @@ unittest
     assert(any!q{a.name == "sample-data"}(entries) == true);
     // adjust if directory contents changes
     assert(entries.length > 3);
-
-    import std.stdio : writeln;
 
     writeln("entries=", entries);
 }

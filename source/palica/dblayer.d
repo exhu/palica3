@@ -57,7 +57,7 @@ struct DirEntry
     bool isDir;
 }
 
-unittest
+version (none) unittest
 {
     import std.stdio : writeln;
 

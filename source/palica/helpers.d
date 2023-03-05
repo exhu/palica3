@@ -6,7 +6,7 @@ module palica.helpers;
 -- https://dlang.org/phobos/std_datetime_systime.html#.SysTime.stdTime
 */
 
-import std.datetime : SysTime, Duration, DateTime, UTC;
+import std.datetime : SysTime, Duration, DateTime, UTC, Clock;
 
 private immutable unixEpochHns = SysTime.fromUnixTime(0, UTC()).stdTime;
 
@@ -19,6 +19,11 @@ SysTime sysTimeFromUnixEpochNanoseconds(long ns) pure nothrow
 {
     long stdTime = ns / 100 + unixEpochHns;
     return SysTime(stdTime, UTC());
+}
+
+SysTime sysTimeNowUtc()
+{
+    return Clock.currTime(UTC());
 }
 
 unittest
