@@ -27,7 +27,8 @@ struct CollBuilder
         fsRead = aFsRead;
     }
 
-    Collection createCollection(string name, string path)
+    Collection createCollection(string name, string path,
+        CollectionListener listener = null)
     {
         import std.path : absolutePath, buildNormalizedPath;
         import palica.fsdb_helpers : dirEntryFromFsDirEntry;
@@ -44,6 +45,8 @@ struct CollBuilder
         auto dirEnt = dirEntryFromFsDirEntry(fsEntry);
         dirEnt.id = dbWrite.createDirEntry(dirEnt);
         auto col = dbWrite.createCollection(name, srcPath, dirEnt.id);
+        if (listener)
+            listener.onNewDirEntry(dirEnt);
         return col;
     }
 
@@ -60,8 +63,12 @@ struct CollBuilder
     void populateDirEntriesInDepth(DbId rootId, string rootPath,
         CollectionListener listener)
     {
+        dbWrite.beginTransaction();
+        scope(exit)
+            dbWrite.commitTransaction();
+
         SubDir[] dirs = populateDirEntries(rootId, rootPath, listener);
-        while(dirs.length > 0)
+        while (dirs.length > 0)
         {
             SubDir[] subDirs;
             foreach (ref d; dirs)
@@ -71,20 +78,21 @@ struct CollBuilder
             dirs = subDirs;
         }
     }
-    
+
     struct SubDir
     {
         DbId id;
         string path;
     }
-    
+
     private SubDir[] writeFsEntriesToDb(DbId dirId, FsDirEntry[] dirEntries,
-        CollectionListener listener)
+    CollectionListener listener)
     {
         SubDir[] result;
-        foreach(d; dirEntries)
+        foreach (d; dirEntries)
         {
             import palica.fsdb_helpers : dirEntryFromFsDirEntry;
+
             DirEntry e = dirEntryFromFsDirEntry(d);
             e.id = dbWrite.createDirEntry(e);
             dbWrite.mapDirEntryToParentDir(e.id, dirId);
@@ -92,12 +100,11 @@ struct CollBuilder
             {
                 result ~= SubDir(e.id, d.name);
             }
-            listener.onNewDirEntry(e);
+            if (listener)
+                listener.onNewDirEntry(e);
         }
         return result;
     }
-    
-
 
     /* will go to separate module
     void syncCollection(const ref Collection col)
@@ -130,7 +137,8 @@ unittest
     auto col = cb.createCollection("sample-col", "./sample-data");
     writeln("col=", col);
 
-    auto listener = new class CollectionListener {
+    auto listener = new class CollectionListener
+    {
         override void onNewDirEntry(ref const DirEntry dir)
         {
 
@@ -139,5 +147,7 @@ unittest
 
     cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener);
     writeln("dump tree:");
-    dumpDirEntryAsTree(col.rootId, db);
+    auto rootEntry = db.getDirEntryById(col.rootId);
+    dumpDirEntry(rootEntry);
+    dumpDirEntryAsTree(col.rootId, db, 1);
 }

@@ -112,4 +112,8 @@ interface DbWriteLayer
     DbId createDirEntry(ref const DirEntry entry);
 
     DbId mapDirEntryToParentDir(DbId entryId, DbId parentId);
+    
+    // optimization hints before performing many inserts
+    void beginTransaction();
+    void commitTransaction();
 }

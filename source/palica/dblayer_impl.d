@@ -166,6 +166,16 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return db.lastRowId();
     }
 
+    override void beginTransaction()
+    {
+        db.db.execute("BEGIN;");
+    }
+
+    override void commitTransaction()
+    {
+        db.db.execute("END;");
+    }
+
     ~this()
     {
         debug stderr.writeln("~this DbLayerImpl");
@@ -228,7 +238,7 @@ unittest
     assert(colls.length == 1);
     assert(colls[0].collName == "mycoll");
 
-    auto coll2 = db.createCollection("mycoll", "srcpath", id);
+    auto coll2 = db.createCollection("mycoll2", "srcpath", id);
 }
 
 version (none) unittest

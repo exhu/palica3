@@ -12,6 +12,7 @@ int main(string[] args)
             .summary("Media catalogue tool.")
             .author("Yury Benesh")
             .add(new Option(null, "db", "main database").required())
+            .add(new Flag("v", "verbose", "verbose"))
             .add(new Command("add")
                     .summary("add collection")
                     .add(new Argument("name", "collection name"))
@@ -23,10 +24,11 @@ int main(string[] args)
                     .add(new Argument("name", "collection name")))
             .parseArgs(args);
 
-        parsed.on("add", (parsedArgs) {
+        parsed.on("add", (ProgramArgs parsedArgs) {
                 result = collectionAdd(parsedArgs.option("db"),
                     parsedArgs.arg("name"),
-                    parsedArgs.arg("path"));
+                    parsedArgs.arg("path"),
+                    parsedArgs.flag("verbose"));
             })
             .on("list", (parsedArgs) {
                     result = collectionList(parsedArgs.option("db"));
