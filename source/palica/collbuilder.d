@@ -46,6 +46,41 @@ struct CollBuilder
         return col;
     }
 
+    /// call after createCollection to populate directory tree
+    /// root = root directory
+    void populateDirEntries(DbId rootId, string rootPath)
+    {
+        auto entries = fsRead.dirEntries(rootPath);
+        auto subEntries = writeFsEntriesToDb(rootId, entries);
+        // TODO repeat for subEntries
+        
+    }
+    
+    struct SubDir
+    {
+        DbId id;
+        string fsName;
+    }
+    
+    private SubDir[] writeFsEntriesToDb(DbId dirId, FsDirEntry[] dirEntries)
+    {
+        SubDir[] result;
+        foreach(d; dirEntries)
+        {
+            import palica.fsdb_helpers : dirEntryFromFsDirEntry;
+            DirEntry e = dirEntryFromFsDirEntry(d);
+            e.id = dbWrite.createDirEntry(e);
+            dbWrite.mapDirEntryToParentDir(e.id, dirId);
+            if (e.isDir)
+            {
+                result ~= SubDir(e.id, e.fsName);
+            }
+        }
+        return result;
+    }
+    
+
+
     /* will go to separate module
     void syncCollection(const ref Collection col)
     {
@@ -63,6 +98,7 @@ unittest
     writeln("CollBuilder tests start.");
     scope (exit)
         writeln("CollBuilder tests end.");
+
     import palica.dblayer_impl;
     import palica.fslayer_impl;
 
@@ -75,5 +111,8 @@ unittest
     auto cb = CollBuilder(db, fs);
     auto col = cb.createCollection("sample-col", "sample-data");
     writeln("col=", col);
+    cb.populateDirEntries(col.rootId, col.fsPath);
+    auto rootEntries = db.getDirEntriesOfParent(col.rootId);
+    writeln("rootEntries=", rootEntries);
 
 }

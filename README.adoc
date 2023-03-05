@@ -34,6 +34,8 @@ primary usage is for image and video files on removable storage.
 
 
 * rich filtering (tags, date, mime) options
+* if necessary replace dynamic arrays with ranges for collections, tags, dirs etc.
+* parallel processing
 
 == DONE
 * basic db operations (collection, direntry objects)

@@ -58,7 +58,7 @@ interface FsReadLayer
     bool isFile(string p);
     bool isDir(string p);
     SysTime modificationDate(string p);
-    /// not recursive
+    /// not recursive, TODO replace with Range?
     FsDirEntry[] dirEntries(string p);
     FsDirEntry dirEntry(string p);
 }
