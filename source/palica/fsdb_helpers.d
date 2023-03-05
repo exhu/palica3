@@ -29,7 +29,8 @@ DirEntry dirEntryFromFsDirEntry(FsDirEntry fsEntry)
         sysTimeNowUtc(), fsEntry.isDir, cast(long) fsEntry.size);
 }
 
-void dumpDirEntry(ref const DirEntry e, int level = 0)
+void dumpDirEntry(ref const DirEntry e, int level = 0,
+    bool verbose = true)
 {
     import std.stdio : writefln;
 
@@ -43,22 +44,28 @@ void dumpDirEntry(ref const DirEntry e, int level = 0)
         return s;
     }
     
-    writefln("%s\"%s\" %sSz: %d M: %s S: %s", indent(), e.fsName,
-        e.isDir ? "DIR " : "",
-        e.fsSize,
-        e.fsModTime,
-        e.lastSyncTime);
+    if (verbose)
+        writefln("%s\"%s\" %sSz: %d M: %s S: %s", indent(), e.fsName,
+            e.isDir ? "DIR " : "",
+            e.fsSize,
+            e.fsModTime,
+            e.lastSyncTime);
+    else
+        writefln("%s\"%s\" %s%d", indent(), e.fsName,
+            e.isDir ? "DIR " : "",
+            e.fsSize);
 }
 
-void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0)
+void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0,
+    bool verbose = true)
 {
     DirEntry[] items = dbRead.getDirEntriesOfParent(rootId);
     foreach (ref DirEntry i; items)
     {
-        dumpDirEntry(i, level);
+        dumpDirEntry(i, level, verbose);
         if (i.isDir)
         {
-            dumpDirEntryAsTree(i.id, dbRead, level + 1);
+            dumpDirEntryAsTree(i.id, dbRead, level + 1, verbose);
         }
     }
 }

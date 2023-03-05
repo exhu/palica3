@@ -52,7 +52,7 @@ int main(string[] args)
             })
             .on("tree", (args) {
                     result = collectionTree(args.option("db"),
-                    args.arg("name"));
+                    args.arg("name"), args.flag("verbose"));
             });
     }
     catch (InvalidArgumentsException e)

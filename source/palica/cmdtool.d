@@ -17,7 +17,7 @@
 +/
 module palica.cmdtool;
 
-import std.stdio : writefln, writeln;
+import std.stdio : writefln, writeln, stderr;
 import palica.collbuilder;
 import palica.dblayer_impl;
 import palica.dblayer;
@@ -52,9 +52,36 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose)
     return 0;
 }
 
-int collectionTree(string dbFilename, string name)
+private void printCollection(ref const Collection c, bool verbose)
 {
-    // TODO
+    if (verbose)
+        writefln("%d, \"%s\", \"%s\", root_id:%d", c.id, c.collName,
+            c.fsPath, c.rootId);
+    else
+        writefln("\"%s\": \"%s\"", c.collName, c.fsPath);
+}
+
+int collectionTree(string dbFilename, string name, bool verbose)
+{
+    auto db = new DbLayerImpl(dbFilename);
+    scope (exit)
+        db.close();
+
+    auto found = db.getCollectionByName(name);
+    if (!found.isNull())
+    {
+        printCollection(found.get(), verbose);
+        auto root = db.getDirEntryById(found.get().rootId);
+        dumpDirEntry(root, 0, verbose);
+        dumpDirEntryAsTree(root.id, db, 1, verbose);
+    }
+    else
+    {
+        stderr.writefln("Collection \"%s\" not found in \"%s\".", name,
+            dbFilename);
+        return 1;
+    }
+
     return 0;
 }
 
@@ -68,11 +95,7 @@ int collectionList(string dbFilename, bool verbose)
     auto cols = db.enumCollections();
     foreach (ref Collection c; cols)
     {
-        if (verbose)
-            writefln("%d, \"%s\", \"%s\", root_id:%d", c.id, c.collName,
-                c.fsPath, c.rootId);
-        else
-            writefln("\"%s\": \"%s\"", c.collName, c.fsPath);
+        printCollection(c, verbose);
     }
 
     return 0;

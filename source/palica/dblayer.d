@@ -73,9 +73,12 @@ version (none) unittest
 
 interface DbReadLayer
 {
+    import std.typecons : Nullable;
+
     Collection[] enumCollections();
     DirEntry getDirEntryById(DbId id);
     DirEntry[] getDirEntriesOfParent(DbId id);
+    Nullable!Collection getCollectionByName(string name);
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly
@@ -94,14 +97,6 @@ interface DbWriteLayer
             import std.string : format;
 
             super(format("Collection '%s' with id '%d' already exists.", name, dbId));
-        }
-    }
-
-    final class DbError : Exception
-    {
-        this(string msg)
-        {
-            super(msg);
         }
     }
 

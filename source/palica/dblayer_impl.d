@@ -42,6 +42,7 @@ private final class DbData
     Statement mapDirEntryToParentStmt;
     Statement dirEntriesFromParentStmt;
     Statement getCollectionsStmt;
+    Statement getCollectionByNameStmt;
 
     this(string dbFilename)
     {
@@ -83,6 +84,10 @@ private final class DbData
 
         getCollectionsStmt = db.prepare(
             "SELECT id, coll_name, fs_path, root_id FROM collections;");
+        
+        getCollectionByNameStmt = db.prepare(
+            "SELECT id, coll_name, fs_path, root_id FROM collections
+                WHERE coll_name = ?");
     }
 
     private void executeSchema()
@@ -192,6 +197,18 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     {
         db.db.execute("END;");
     }
+    
+    import std.typecons : Nullable, nullable;
+
+    Nullable!Collection getCollectionByName(string name)
+    {
+        auto found = bindAllAndExec!(Collection)(db.getCollectionByNameStmt, name);
+        if (found.length == 1)
+        {
+            return nullable(found[0]);
+        }
+        return Nullable!Collection();
+    }
 
     ~this()
     {
@@ -256,6 +273,11 @@ unittest
     assert(colls[0].collName == "mycoll");
 
     auto coll2 = db.createCollection("mycoll2", "srcpath", id);
+    
+    auto colByName = db.getCollectionByName("mycoll2");
+    assert(!colByName.isNull());
+    assert(colByName.get().collName == "mycoll2");
+    assert(db.getCollectionByName("asdasd").isNull());
 }
 
 version (none) unittest
