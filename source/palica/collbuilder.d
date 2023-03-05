@@ -134,16 +134,18 @@ unittest
     auto fs = new FsLayerImpl;
 
     auto cb = CollBuilder(db, fs);
-    auto col = cb.createCollection("sample-col", "./sample-data");
-    writeln("col=", col);
 
     auto listener = new class CollectionListener
     {
         override void onNewDirEntry(ref const DirEntry dir)
         {
-
+            writeln("onNewDirEntry: ", dir);
         }
     };
+
+    auto col = cb.createCollection("sample-col", "./sample-data", listener);
+    writeln("col=", col);
+
 
     cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener);
     writeln("dump tree:");
