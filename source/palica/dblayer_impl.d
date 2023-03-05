@@ -165,7 +165,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     ~this()
     {
-        debug stderr.writeln("~this impl");
+        debug stderr.writeln("~this DbLayerImpl");
     }
 
 private:

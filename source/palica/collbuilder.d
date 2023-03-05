@@ -127,7 +127,7 @@ unittest
     auto fs = new FsLayerImpl;
 
     auto cb = CollBuilder(db, fs);
-    auto col = cb.createCollection("sample-col", "sample-data");
+    auto col = cb.createCollection("sample-col", "./sample-data");
     writeln("col=", col);
 
     auto listener = new class CollectionListener {
@@ -138,9 +138,6 @@ unittest
     };
 
     cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener);
-    //auto rootEntries = db.getDirEntriesOfParent(col.rootId);
-    //writeln("rootEntries=", rootEntries);
     writeln("dump tree:");
     dumpDirEntryAsTree(col.rootId, db);
-
 }
