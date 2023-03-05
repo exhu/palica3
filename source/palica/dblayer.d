@@ -55,6 +55,7 @@ struct DirEntry
     SysTime fsModTime;
     SysTime lastSyncTime;
     bool isDir;
+    long fsSize;
 }
 
 version (none) unittest

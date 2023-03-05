@@ -9,7 +9,7 @@ DirEntry dirEntryFromFsDirEntry(FsDirEntry fsEntry)
     import std.path : baseName;
 
     return DirEntry(0, fsEntry.name.baseName(), fsEntry.modDateTime, sysTimeNowUtc(),
-        fsEntry.isDir);
+        fsEntry.isDir, cast(long) fsEntry.size);
 }
 
 void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0)
@@ -17,7 +17,7 @@ void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0)
     string indent()
     {
         string s;
-        for(int i = 0; i < level; ++i)
+        for (int i = 0; i < level; ++i)
         {
             s ~= "  ";
         }
@@ -25,13 +25,15 @@ void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0)
     }
 
     DirEntry[] items = dbRead.getDirEntriesOfParent(rootId);
-    foreach(ref DirEntry i; items)
+    foreach (ref DirEntry i; items)
     {
         import std.stdio : writeln;
-        writeln(indent(), i.fsName, " M:", i.fsModTime, " S:", i.lastSyncTime);
+
+        writeln(indent(), i.fsName, i.isDir ? " DIR" : "", " Sz:", i.fsSize,
+            " M:", i.fsModTime, " S:", i.lastSyncTime);
         if (i.isDir)
         {
-            dumpDirEntryAsTree(i.id, dbRead, level+1);
+            dumpDirEntryAsTree(i.id, dbRead, level + 1);
         }
     }
 }

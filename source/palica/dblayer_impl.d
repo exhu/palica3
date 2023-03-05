@@ -44,26 +44,28 @@ private final class DbData
             executeSchema();
         }
 
-        createDirEntryStmt = db.prepare("INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time, is_dir) " ~
-                "VALUES(:fs_name, :fs_mod_time, :last_sync_time, :is_dir);");
+        createDirEntryStmt = db.prepare(
+            "INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time, is_dir, fs_size)
+                VALUES(:fs_name, :fs_mod_time, :last_sync_time, :is_dir, :fs_size);");
         createCollectionStmt = db.prepare(
-            "INSERT INTO collections(coll_name, fs_path, root_id) " ~
-                "VALUES(:coll_name, :fs_path, :root_id);");
+            "INSERT INTO collections(coll_name, fs_path, root_id)
+                VALUES(:coll_name, :fs_path, :root_id);");
         selectDirEntryByIdStmt = db.prepare(
-            "SELECT id, fs_name, fs_mod_time, last_sync_time, is_dir FROM dir_entries " ~
-                "WHERE id = ?");
+            "SELECT id, fs_name, fs_mod_time, last_sync_time, is_dir, fs_size
+                FROM dir_entries WHERE id = ?");
         mapDirEntryToParentStmt = db.prepare(
-            "INSERT INTO dir_to_sub(directory_id, entry_id) VALUES(" ~
-                ":directory_id, :entry_id);");
+            "INSERT INTO dir_to_sub(directory_id, entry_id) VALUES(
+                :directory_id, :entry_id);");
 
         // need to select from dir_entries all where id == entry_id from dir_to_sub
         dirEntriesFromParentStmt = db.prepare(
-            "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir FROM dir_entries e JOIN " ~
-                "dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
+            "SELECT e.id, e.fs_name, e.fs_mod_time, e.last_sync_time, e.is_dir,
+                e.fs_size
+                FROM dir_entries e JOIN
+                dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
 
         getCollectionsStmt = db.prepare(
-            "SELECT id, coll_name, fs_path, root_id " ~
-                "FROM collections;");
+            "SELECT id, coll_name, fs_path, root_id FROM collections;");
     }
 
     private void executeSchema()
@@ -123,7 +125,8 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
             bindPair(":fs_name", entry.fsName),
             bindPair(":fs_mod_time", unixEpochNanoseconds(entry.fsModTime)),
             bindPair(":last_sync_time", unixEpochNanoseconds(entry.lastSyncTime)),
-            bindPair(":is_dir", entry.isDir)
+            bindPair(":is_dir", entry.isDir),
+            bindPair(":fs_size", entry.fsSize),
         ]);
     }
 

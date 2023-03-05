@@ -51,10 +51,12 @@ CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT UNIQUE NOT NULL,
 -- timestamps in nanoseconds since unix epoch
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
 -- when adding a new collection
+-- fs_size is for files only, 0 for dirs.
 CREATE TABLE dir_entries(id INTEGER PRIMARY KEY, fs_name TEXT NOT NULL,
     fs_mod_time INTEGER NOT NULL,
     last_sync_time INTEGER NOT NULL,
-    is_dir INTEGER NOT NULL);
+    is_dir INTEGER NOT NULL,
+    fs_size INTEGER NOT NULL);
 
 -- directory to file/subdir mapping (id from dir_entries)
 CREATE TABLE dir_to_sub(id INTEGER PRIMARY KEY, directory_id INTEGER NOT NULL, entry_id INTEGER NOT NULL UNIQUE);
