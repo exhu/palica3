@@ -84,7 +84,7 @@ private final class DbData
 
         getCollectionsStmt = db.prepare(
             "SELECT id, coll_name, fs_path, root_id FROM collections;");
-        
+
         getCollectionByNameStmt = db.prepare(
             "SELECT id, coll_name, fs_path, root_id FROM collections
                 WHERE coll_name = ?");
@@ -108,6 +108,21 @@ private final class DbData
     ~this()
     {
         debug stderr.writeln("~this DbData ", this, " ", db);
+    }
+}
+
+struct AutoDb
+{
+    DbLayerImpl db;
+
+    this(string dbFilename)
+    {
+        db = new DbLayerImpl(dbFilename);
+    }
+
+    ~this()
+    {
+        db.close();
     }
 }
 
@@ -197,7 +212,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     {
         db.db.execute("END;");
     }
-    
+
     import std.typecons : Nullable, nullable;
 
     Nullable!Collection getCollectionByName(string name)
@@ -225,11 +240,11 @@ unittest
     scope (exit)
         writeln("DbLayerImpl long test end.");
 
-    auto db = new DbLayerImpl(":memory:");
+    auto adb = AutoDb(":memory:");
+    auto db = adb.db;
     scope (exit)
     {
         writeln("scope exit KKW");
-        db.close();
     }
 
     import std.datetime : Clock, UTC;
@@ -273,7 +288,7 @@ unittest
     assert(colls[0].collName == "mycoll");
 
     auto coll2 = db.createCollection("mycoll2", "srcpath", id);
-    
+
     auto colByName = db.getCollectionByName("mycoll2");
     assert(!colByName.isNull());
     assert(colByName.get().collName == "mycoll2");

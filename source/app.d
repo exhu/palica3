@@ -20,7 +20,7 @@ int main(string[] args)
     import std.stdio : writeln;
     import commandr;
     import palica.cmdtool;
-    
+
     int result = 1;
 
     try
@@ -43,17 +43,17 @@ int main(string[] args)
             .parseArgs(args);
 
         parsed.on("add", (ProgramArgs args) {
-                result = collectionAdd(args.option("db"),
-                    args.arg("name"),
-                    args.arg("path"),
-                    args.flag("verbose"),
-                    !args.flag("yes"));
-            })
+            result = collectionAdd(args.option("db"),
+                args.arg("name"),
+                args.arg("path"),
+                args.flag("verbose"),
+                !args.flag("yes"));
+        })
             .on("list", (args) {
-                    result = collectionList(args.option("db"), args.flag("verbose"));
+                result = collectionList(args.option("db"), args.flag("verbose"));
             })
             .on("tree", (args) {
-                    result = collectionTree(args.option("db"),
+                result = collectionTree(args.option("db"),
                     args.arg("name"), args.flag("verbose"));
             });
     }

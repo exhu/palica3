@@ -34,11 +34,9 @@ private bool continueWithDupPath(DbReadLayer db, string path, bool ask)
 int collectionAdd(string dbFilename, string name, string path, bool verbose, bool ask)
 {
     writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename, path);
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
     auto fs = new FsLayerImpl();
-    auto db = new DbLayerImpl(dbFilename);
-    scope (exit)
-        db.close();
-    
     if (!continueWithDupPath(db, path, ask))
     {
         stderr.writeln("Abort for similar collection path.");
@@ -76,9 +74,8 @@ private void printCollection(ref const Collection c, bool verbose)
 
 int collectionTree(string dbFilename, string name, bool verbose)
 {
-    auto db = new DbLayerImpl(dbFilename);
-    scope (exit)
-        db.close();
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
 
     auto found = db.getCollectionByName(name);
     if (!found.isNull())
@@ -100,9 +97,8 @@ int collectionTree(string dbFilename, string name, bool verbose)
 
 int collectionList(string dbFilename, bool verbose)
 {
-    auto db = new DbLayerImpl(dbFilename);
-    scope (exit)
-        db.close();
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
 
     writefln("Collections in \"%s\":", dbFilename);
     auto cols = db.enumCollections();
@@ -111,5 +107,52 @@ int collectionList(string dbFilename, bool verbose)
         printCollection(c, verbose);
     }
 
+    return 0;
+}
+
+int collectionSync(string dbFilename, string name, bool verbose, bool ask)
+{
+    // TODO refactor boilerplate db code into a func + callback
+    auto fs = new FsLayerImpl();
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
+
+    // TODO refactor dup collection find and message code
+    auto found = db.getCollectionByName(name);
+    if (found.isNull())
+    {
+        stderr.writefln("Collection '%s' not found in '%s'.", name, dbFilename);
+        return 1;
+    }
+
+    auto path = found.get().fsPath;
+    writefln("Syncing collection '%s' into '%s' from '%s':", name, dbFilename,
+        path);
+
+    if (!continueWithDupPath(db, path, ask))
+    {
+        stderr.writeln("Abort for similar collection path.");
+        return 1;
+    }
+
+    /+
+    long entries = 1;
+    auto listener = new class CollectionListener
+    {
+        override void onNewDirEntry(ref const DirEntry e)
+        {
+            if (verbose)
+                writefln("Found %s", e.fsName);
+
+            entries += 1;
+        }
+    };
+
+    auto cb = CollBuilder(db, fs);
+    auto col = cb.createCollection(name, path, listener);
+
+    cb.populateDirEntriesInDepth(col.rootId, path, listener);
+    writefln("Finished with %d entries.", entries);
+    +/
     return 0;
 }
