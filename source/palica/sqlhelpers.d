@@ -103,3 +103,12 @@ T[] bindAllAndExec(T, Args...)(ref Statement stmt, Args args)
     auto rows = stmt.execute();
     return structsFromRows!T(rows);
 }
+
+void bindAllAndExecNoResult(Args...)(ref Statement stmt, Args args)
+{
+    stmt.bindAll(args);
+    scope (exit)
+        stmt.reset();
+    stmt.execute();
+}
+

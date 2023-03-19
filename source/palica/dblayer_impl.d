@@ -33,6 +33,33 @@ final class FailedToOpenDb : Exception
     }
 }
 
+private struct DelDirStatements
+{
+    this(ref Database db)
+    {
+        dirToSub = db.prepare("DELETE FROM dir_to_sub WHERE entry_id = ?1");
+        dirEntries = db.prepare("DELETE FROM dir_entries WHERE id = ?1");
+        tagToDir = db.prepare("DELETE FROM tag_to_dir_entry WHERE dir_entry_id = ?1");
+        lastEdit = db.prepare("DELETE FROM last_edit WHERE dir_entry_id = ?1");
+        mimeToDir = db.prepare("DELETE FROM mime_to_dir_entry WHERE dir_entry_id = ?1");
+    }
+    
+    void execForId(DbId id)
+    {
+        foreach(ref s; this.tupleof)
+        {
+            bindAllAndExecNoResult(s, id);
+        }
+    }
+
+private:
+    Statement dirToSub;
+    Statement dirEntries;
+    Statement tagToDir;
+    Statement lastEdit;
+    Statement mimeToDir;
+}
+
 private final class DbData
 {
     Database db;
@@ -44,8 +71,8 @@ private final class DbData
     Statement getCollectionsStmt;
     Statement getCollectionByNameStmt;
     Statement getCollectionsByPathStmt;
-    Statement delDirEntryStmt;
     Statement getDirChildIdsStmt;
+    DelDirStatements delDirStatements;
 
     this(string dbFilename)
     {
@@ -96,8 +123,7 @@ private final class DbData
             "SELECT id, coll_name, fs_path, root_id FROM collections
                 WHERE fs_path = ?");
 
-        // TODO this will not work, only one statement can be prepared
-        delDirEntryStmt = db.prepare(import("del_dir_entry.sql"));
+        delDirStatements = DelDirStatements(db);
         getDirChildIdsStmt = db.prepare("SELECT entry_id FROM dir_to_sub
             WHERE directory_id = ?1");
     }
@@ -225,6 +251,11 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         db.db.execute("END;");
     }
 
+    override void rollbackTransaction()
+    {
+        db.db.execute("ROLLBACK;");
+    }
+
     import std.typecons : Nullable, nullable;
 
     Nullable!Collection getCollectionByName(string name)
@@ -246,10 +277,28 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
 
     override void deleteDirEntry(DbId id)
     {
-        beginTransaction();
+        struct ResId
+        {
+            DbId id;
+        }
 
-        // TODO recursively delete
-        bindAllAndExec!(Collection)(db.delDirEntryStmt, id);
+        beginTransaction();
+        scope(failure) rollbackTransaction();
+
+        // recursively delete
+        DbId[] toProcess = [id];
+        while(toProcess.length > 0)
+        {
+            DbId curId = toProcess[0];
+            db.delDirStatements.execForId(curId);
+            ResId[] foundIds = bindAllAndExec!ResId(db.getDirChildIdsStmt,
+                curId);
+            toProcess.reserve(toProcess.length+foundIds.length);
+            foreach(i; foundIds)
+                toProcess ~= i.id;
+
+            toProcess = toProcess[1..$];
+        }
 
         commitTransaction();
     }
@@ -327,6 +376,49 @@ unittest
     writeln("cols =", cols);
     assert(cols.length != 0);
     assert(cols[0].collName == "mycoll2" || cols[0].collName == "mycoll");
+}
+
+unittest
+{
+    writeln("delDirEntries test...");
+    import std.datetime : Clock, UTC;
+    // delDirEntry
+    auto adb = AutoDb(":memory:");
+    auto db = adb.db;
+    auto e1 = DirEntry(0, "dir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
+    auto e2 = DirEntry(0, "subdir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
+    auto e3 = DirEntry(0, "leaf", Clock.currTime(UTC()), Clock.currTime(UTC()),
+            false);
+    e1.id = db.createDirEntry(e1);
+    e2.id = db.createDirEntry(e2);
+    e3.id = db.createDirEntry(e3);
+
+    db.mapDirEntryToParentDir(e2.id, e1.id);
+    db.mapDirEntryToParentDir(e3.id, e2.id);
+
+    auto e1Leaves = db.getDirEntriesOfParent(e1.id);
+    auto e2Leaves = db.getDirEntriesOfParent(e2.id);
+
+    writeln(e1Leaves);
+    assert(e1Leaves[0] == e2);
+    writeln(e2Leaves);
+    assert(e2Leaves[0] == e3);
+
+    auto found1 = db.getDirEntryById(e3.id);
+    assert(found1 == e3);
+
+    db.deleteDirEntry(e1.id);
+
+    try
+    {
+        auto found = db.getDirEntryById(e3.id);
+        writeln("must no reach there. found=", found);
+        assert(false);
+    }
+    catch (Exception e)
+    {
+        writeln("e3 not found -- ok.");
+    }
 }
 
 version (none) unittest
