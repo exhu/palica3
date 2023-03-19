@@ -43,10 +43,10 @@ private struct DelDirStatements
         lastEdit = db.prepare("DELETE FROM last_edit WHERE dir_entry_id = ?1");
         mimeToDir = db.prepare("DELETE FROM mime_to_dir_entry WHERE dir_entry_id = ?1");
     }
-    
+
     void execForId(DbId id)
     {
-        foreach(ref s; this.tupleof)
+        foreach (ref s; this.tupleof)
         {
             bindAllAndExecNoResult(s, id);
         }
@@ -73,6 +73,7 @@ private final class DbData
     Statement getCollectionsByPathStmt;
     Statement getDirChildIdsStmt;
     DelDirStatements delDirStatements;
+    Statement deleteCollectionStmt;
 
     this(string dbFilename)
     {
@@ -126,6 +127,9 @@ private final class DbData
         delDirStatements = DelDirStatements(db);
         getDirChildIdsStmt = db.prepare("SELECT entry_id FROM dir_to_sub
             WHERE directory_id = ?1");
+
+        deleteCollectionStmt = db.prepare("DELETE FROM collections
+            WHERE id = ?1");
     }
 
     private void executeSchema()
@@ -275,32 +279,54 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return found;
     }
 
-    override void deleteDirEntry(DbId id)
+    override void deleteDirEntry(DbId id, bool newTransaction = true)
     {
         struct ResId
         {
             DbId id;
         }
 
-        beginTransaction();
-        scope(failure) rollbackTransaction();
+        if (newTransaction)
+            beginTransaction();
+
+        scope (failure)
+            if (newTransaction)
+                rollbackTransaction();
 
         // recursively delete
         DbId[] toProcess = [id];
-        while(toProcess.length > 0)
+        while (toProcess.length > 0)
         {
             DbId curId = toProcess[0];
             db.delDirStatements.execForId(curId);
             ResId[] foundIds = bindAllAndExec!ResId(db.getDirChildIdsStmt,
                 curId);
-            toProcess.reserve(toProcess.length+foundIds.length);
-            foreach(i; foundIds)
+            toProcess.reserve(toProcess.length + foundIds.length);
+            foreach (i; foundIds)
                 toProcess ~= i.id;
 
-            toProcess = toProcess[1..$];
+            toProcess = toProcess[1 .. $];
         }
 
+        if (newTransaction)
+            commitTransaction();
+    }
+
+    override void deleteCollection(Collection col)
+    {
+        beginTransaction();
+        scope (failure)
+            rollbackTransaction();
+
+        bindAllAndExecNoResult(db.deleteCollectionStmt, col.id);
+        deleteDirEntry(col.rootId, false);
+
         commitTransaction();
+    }
+
+    Statement prepare(string sql)
+    {
+        return db.db.prepare(sql);
     }
 
     ~this()
@@ -382,13 +408,14 @@ unittest
 {
     writeln("delDirEntries test...");
     import std.datetime : Clock, UTC;
+
     // delDirEntry
     auto adb = AutoDb(":memory:");
     auto db = adb.db;
     auto e1 = DirEntry(0, "dir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
     auto e2 = DirEntry(0, "subdir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
     auto e3 = DirEntry(0, "leaf", Clock.currTime(UTC()), Clock.currTime(UTC()),
-            false);
+        false);
     e1.id = db.createDirEntry(e1);
     e2.id = db.createDirEntry(e2);
     e3.id = db.createDirEntry(e3);
@@ -412,13 +439,55 @@ unittest
     try
     {
         auto found = db.getDirEntryById(e3.id);
-        writeln("must no reach there. found=", found);
+        writeln("must not reach there. found=", found);
         assert(false);
     }
     catch (Exception e)
     {
         writeln("e3 not found -- ok.");
     }
+}
+
+unittest
+{
+    writeln("deleteCollection test...");
+    import std.datetime : Clock, UTC;
+
+    // delDirEntry
+    auto adb = AutoDb(":memory:");
+    auto db = adb.db;
+    auto e1 = DirEntry(0, "dir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
+    auto e2 = DirEntry(0, "subdir", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
+    auto e3 = DirEntry(0, "leaf", Clock.currTime(UTC()), Clock.currTime(UTC()),
+        false);
+    e1.id = db.createDirEntry(e1);
+    e2.id = db.createDirEntry(e2);
+    e3.id = db.createDirEntry(e3);
+
+    db.mapDirEntryToParentDir(e2.id, e1.id);
+    db.mapDirEntryToParentDir(e3.id, e2.id);
+    auto coll2 = db.createCollection("mycoll2", "srcpath", e1.id);
+
+    auto found1 = db.getCollectionByName("mycoll2");
+    assert(!found1.isNull);
+    assert(found1.get() == coll2);
+
+    auto countStmt = db.prepare("SELECT COUNT(*) FROM dir_entries");
+    struct Res
+    {
+        long count;
+    }
+    auto res1 = bindAllAndExec!Res(countStmt);
+    assert(res1[0].count == 3);
+
+
+    db.deleteCollection(coll2);
+
+    auto found2 = db.getCollectionByName("mycoll2");
+    assert(found2.isNull);
+
+    auto res2 = bindAllAndExec!Res(countStmt);
+    assert(res2[0].count == 0);
 }
 
 version (none) unittest

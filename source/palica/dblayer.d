@@ -116,5 +116,7 @@ interface DbWriteLayer
 
     // deletes entry and all dependent items (if it's dir, then subdirs)
     // dir_to_sub, tag_to_dir_entry, mime_to_dir_entry
-    void deleteDirEntry(DbId id);
+    void deleteDirEntry(DbId id, bool newTransaction = true);
+
+    void deleteCollection(Collection col);
 }
