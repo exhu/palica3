@@ -112,4 +112,8 @@ interface DbWriteLayer
     // optimization hints before performing many inserts
     void beginTransaction();
     void commitTransaction();
+
+    // deletes entry and all dependent items (if it's dir, then subdirs)
+    // dir_to_sub, tag_to_dir_entry, mime_to_dir_entry
+    void deleteDirEntry(DbId id);
 }

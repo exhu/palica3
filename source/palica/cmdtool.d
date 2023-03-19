@@ -162,6 +162,8 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
         stderr.writeln("Abort for similar collection path.");
         return 1;
     }
+    
+    // TODO
 
     /+
     long entries = 1;

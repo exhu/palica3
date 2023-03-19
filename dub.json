@@ -9,5 +9,6 @@
 	},
 	"description": "Media catalogue",
 	"license": "GPLv3+",
-	"name": "palica"
+	"name": "palica",
+        "stringImportPaths": ["sql"]
 }

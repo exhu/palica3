@@ -9,18 +9,14 @@ primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
-** add, warn if there're collections with the same source path
-** sync, warn if there're collections with the same source path
 ** remove
+** sync, warn if there're collections with the same source path
 ** add file, dir, files from list, ignore hidden files/folders ".*"
 ** support media detection for collections from the same source path, e.g. for /cdrom
 via fs uuid (e.g. blkid)
 
 * metadata database
-** name
 ** tags (keywords)
-** date
-** size
 ** mime-type
 ** sha256
 
@@ -39,11 +35,17 @@ via fs uuid (e.g. blkid)
 * parallel processing
 
 == DONE
+* collection
+** add, warn if there're collections with the same source path
 * scan directory tree, build collection
 * basic db operations (collection, direntry objects)
 * basic fs operations (directory entry info)
 * replace direct sqlite3 calls with d2sqlite3
 * make a better cli and usage screen (parse args based on command)
+* metadata database
+** name
+** date
+** size
 
 == Dependencies
 

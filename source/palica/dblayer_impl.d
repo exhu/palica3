@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 +/
 module palica.dblayer_impl;
-import palica.dblayer;
+public import palica.dblayer;
 import palica.helpers;
 import palica.sqlhelpers;
 
@@ -44,6 +44,7 @@ private final class DbData
     Statement getCollectionsStmt;
     Statement getCollectionByNameStmt;
     Statement getCollectionsByPathStmt;
+    Statement delDirEntryStmt;
 
     this(string dbFilename)
     {
@@ -93,6 +94,8 @@ private final class DbData
         getCollectionsByPathStmt = db.prepare(
             "SELECT id, coll_name, fs_path, root_id FROM collections
                 WHERE fs_path = ?");
+
+        delDirEntryStmt = db.prepare(import("del_dir_entry1.sql"));
     }
 
     private void executeSchema()
@@ -235,6 +238,16 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         auto found = bindAllAndExec!(Collection)(db.getCollectionsByPathStmt,
                 path);
         return found;
+    }
+
+    override void deleteDirEntry(DbId id)
+    {
+        beginTransaction();
+
+        // TODO recursively delete
+        bindAllAndExec!(Collection)(db.delDirEntryStmt, id);
+
+        commitTransaction();
     }
 
     ~this()
