@@ -43,6 +43,7 @@ private final class DbData
     Statement dirEntriesFromParentStmt;
     Statement getCollectionsStmt;
     Statement getCollectionByNameStmt;
+    Statement getCollectionsByPathStmt;
 
     this(string dbFilename)
     {
@@ -88,6 +89,10 @@ private final class DbData
         getCollectionByNameStmt = db.prepare(
             "SELECT id, coll_name, fs_path, root_id FROM collections
                 WHERE coll_name = ?");
+
+        getCollectionsByPathStmt = db.prepare(
+            "SELECT id, coll_name, fs_path, root_id FROM collections
+                WHERE fs_path = ?");
     }
 
     private void executeSchema()
@@ -223,6 +228,13 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
             return nullable(found[0]);
         }
         return Nullable!Collection();
+    }
+
+    Collection[] getCollectionsWithSamePath(string path)
+    {
+        auto found = bindAllAndExec!(Collection)(db.getCollectionsByPathStmt,
+                path);
+        return found;
     }
 
     ~this()

@@ -47,10 +47,9 @@ struct CollBuilder
     Collection createCollection(string name, string path,
         CollectionListener listener = null)
     {
-        import std.path : absolutePath, buildNormalizedPath;
         import palica.fsdb_helpers : dirEntryFromFsDirEntry;
 
-        immutable srcPath = path.absolutePath().buildNormalizedPath();
+        immutable srcPath = fsRead.normalizedAbsPath(path);
         if (!fsRead.pathExists(srcPath))
         {
             throw new Exception(

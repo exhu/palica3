@@ -61,6 +61,7 @@ interface FsReadLayer
     /// not recursive, TODO replace with Range?
     FsDirEntry[] dirEntries(string p);
     FsDirEntry dirEntry(string p);
+    string normalizedAbsPath(string path);
 }
 
 interface FsWriteLayer

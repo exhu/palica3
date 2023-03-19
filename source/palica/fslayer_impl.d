@@ -86,6 +86,12 @@ final class FsLayerImpl : FsReadLayer
         }
         return e.get();
     }
+
+    override string normalizedAbsPath(string path)
+    {
+        import std.path : absolutePath, buildNormalizedPath;
+        return path.absolutePath().buildNormalizedPath();
+    }
 }
 
 unittest

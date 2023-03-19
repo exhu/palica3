@@ -17,12 +17,12 @@ primary usage is for image and video files on removable storage.
 via fs uuid (e.g. blkid)
 
 * metadata database
-    ** name
-    ** tags (keywords)
-    ** date
-    ** size
-    ** mime-type
-    ** sha256
+** name
+** tags (keywords)
+** date
+** size
+** mime-type
+** sha256
 
 * sync report
 ** collection availability

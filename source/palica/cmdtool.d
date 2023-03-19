@@ -22,22 +22,36 @@ import palica.collbuilder;
 import palica.dblayer_impl;
 import palica.dblayer;
 import palica.fslayer_impl;
+import palica.fslayer;
 import palica.fsdb_helpers;
+import std.typecons : Nullable;
 
-private bool continueWithDupPath(DbReadLayer db, string path, bool ask)
+private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bool ask)
 {
-    // TODO normalize path, find in db collections with same path
-    // TODO prompt for continuation
+    auto normalized = fs.normalizedAbsPath(path);
+    Collection[] found = db.getCollectionsWithSamePath(normalized);
+    if (found.length != 0)
+    {
+        writefln("Existing collections with path '%s' found:", normalized);
+
+        if (ask)
+        {
+            writeln("Continue? (y/n)");
+            // TODO prompt for continuation
+        }
+    }
     return true;
 }
 
-int collectionAdd(string dbFilename, string name, string path, bool verbose, bool ask)
+int collectionAdd(string dbFilename, string name, string path, bool verbose,
+    bool ask)
 {
-    writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename, path);
+    writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename,
+        path);
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
     auto fs = new FsLayerImpl();
-    if (!continueWithDupPath(db, path, ask))
+    if (!continueWithDupPath(db, fs, path, ask))
     {
         stderr.writeln("Abort for similar collection path.");
         return 1;
@@ -72,12 +86,22 @@ private void printCollection(ref const Collection c, bool verbose)
         writefln("\"%s\": \"%s\"", c.collName, c.fsPath);
 }
 
+private Nullable!Collection findCol(string dbFilename, DbReadLayer db, string name)
+{
+    auto found = db.getCollectionByName(name);
+
+    if (found.isNull())
+        stderr.writefln("Collection \"%s\" not found in \"%s\".", name,
+            dbFilename);
+    return found;
+}
+
 int collectionTree(string dbFilename, string name, bool verbose)
 {
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
-    auto found = db.getCollectionByName(name);
+    auto found = findCol(dbFilename, db, name);
     if (!found.isNull())
     {
         printCollection(found.get(), verbose);
@@ -87,8 +111,6 @@ int collectionTree(string dbFilename, string name, bool verbose)
     }
     else
     {
-        stderr.writefln("Collection \"%s\" not found in \"%s\".", name,
-            dbFilename);
         return 1;
     }
 
@@ -112,24 +134,19 @@ int collectionList(string dbFilename, bool verbose)
 
 int collectionSync(string dbFilename, string name, bool verbose, bool ask)
 {
-    // TODO refactor boilerplate db code into a func + callback
     auto fs = new FsLayerImpl();
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
-    // TODO refactor dup collection find and message code
-    auto found = db.getCollectionByName(name);
+    auto found = findCol(dbFilename, db, name);
     if (found.isNull())
-    {
-        stderr.writefln("Collection '%s' not found in '%s'.", name, dbFilename);
         return 1;
-    }
 
     auto path = found.get().fsPath;
     writefln("Syncing collection '%s' into '%s' from '%s':", name, dbFilename,
         path);
 
-    if (!continueWithDupPath(db, path, ask))
+    if (!continueWithDupPath(db, fs, path, ask))
     {
         stderr.writeln("Abort for similar collection path.");
         return 1;
