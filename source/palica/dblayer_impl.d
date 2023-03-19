@@ -305,6 +305,11 @@ unittest
     assert(!colByName.isNull());
     assert(colByName.get().collName == "mycoll2");
     assert(db.getCollectionByName("asdasd").isNull());
+
+    auto cols = db.getCollectionsWithSamePath("srcpath");
+    writeln("cols =", cols);
+    assert(cols.length != 0);
+    assert(cols[0].collName ==  "mycoll2" || cols[0].collName == "mycoll");
 }
 
 version (none) unittest

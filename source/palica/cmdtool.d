@@ -32,12 +32,15 @@ private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bo
     Collection[] found = db.getCollectionsWithSamePath(normalized);
     if (found.length != 0)
     {
-        writefln("Existing collections with path '%s' found:", normalized);
+        writefln("Warning! Existing collections with path '%s' found:", normalized);
+        foreach (c; found)
+            writeln(c.collName);
 
         if (ask)
         {
-            writeln("Continue? (y/n)");
-            // TODO prompt for continuation
+            import palica.tui_helpers : promptYesNo;
+
+            return promptYesNo("Continue?");
         }
     }
     return true;
@@ -50,6 +53,14 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
         path);
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
+
+    auto existingCol = db.getCollectionByName(name);
+    if (!existingCol.isNull)
+    {
+        writeln("Error! There's already a collection with that name.");
+        return 1;
+    }
+
     auto fs = new FsLayerImpl();
     if (!continueWithDupPath(db, fs, path, ask))
     {
