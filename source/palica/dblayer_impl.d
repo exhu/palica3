@@ -45,6 +45,7 @@ private final class DbData
     Statement getCollectionByNameStmt;
     Statement getCollectionsByPathStmt;
     Statement delDirEntryStmt;
+    Statement getDirChildIdsStmt;
 
     this(string dbFilename)
     {
@@ -95,7 +96,10 @@ private final class DbData
             "SELECT id, coll_name, fs_path, root_id FROM collections
                 WHERE fs_path = ?");
 
-        delDirEntryStmt = db.prepare(import("del_dir_entry1.sql"));
+        // TODO this will not work, only one statement can be prepared
+        delDirEntryStmt = db.prepare(import("del_dir_entry.sql"));
+        getDirChildIdsStmt = db.prepare("SELECT entry_id FROM dir_to_sub
+            WHERE directory_id = ?1");
     }
 
     private void executeSchema()
@@ -236,7 +240,7 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     Collection[] getCollectionsWithSamePath(string path)
     {
         auto found = bindAllAndExec!(Collection)(db.getCollectionsByPathStmt,
-                path);
+            path);
         return found;
     }
 
@@ -322,7 +326,7 @@ unittest
     auto cols = db.getCollectionsWithSamePath("srcpath");
     writeln("cols =", cols);
     assert(cols.length != 0);
-    assert(cols[0].collName ==  "mycoll2" || cols[0].collName == "mycoll");
+    assert(cols[0].collName == "mycoll2" || cols[0].collName == "mycoll");
 }
 
 version (none) unittest
