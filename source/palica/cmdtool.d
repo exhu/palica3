@@ -143,6 +143,40 @@ int collectionList(string dbFilename, bool verbose)
     return 0;
 }
 
+int collectionRemove(string dbFilename, string name, bool ask)
+{
+    // don't create db, if there's none
+    auto fs = new FsLayerImpl();
+    if (!fs.pathExists(dbFilename))
+    {
+        writefln("There's no '%s' database to remove collection from.",
+            dbFilename);
+        return 1;
+    }
+
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
+
+    auto found = db.getCollectionByName(name);
+    if (found.isNull)
+    {
+        writefln("Error: collection '%s' has not been found.", name);
+        return 1;
+    }
+
+    import palica.tui_helpers : promptYesNo;
+    import std.format : format;
+    if (!ask || promptYesNo("Delete collection '%s'?".format(name)))
+    {
+        writefln("Deleting collection '%s'...", name);
+        db.deleteCollection(found.get());
+        writefln("Collection '%s' has been deleted.", name);
+        return 0;
+    }
+
+    return 1;
+}
+
 int collectionSync(string dbFilename, string name, bool verbose, bool ask)
 {
     auto fs = new FsLayerImpl();
@@ -162,7 +196,7 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
         stderr.writeln("Abort for similar collection path.");
         return 1;
     }
-    
+
     // TODO
 
     /+

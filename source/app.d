@@ -40,6 +40,9 @@ int main(string[] args)
             .add(new Command("tree")
                     .summary("list collection files")
                     .add(new Argument("name", "collection name")))
+            .add(new Command("remove")
+                    .summary("remove collection")
+                    .add(new Argument("name", "collection name")))
             .parseArgs(args);
 
         parsed.on("add", (ProgramArgs args) {
@@ -55,6 +58,10 @@ int main(string[] args)
             .on("tree", (args) {
                 result = collectionTree(args.option("db"),
                     args.arg("name"), args.flag("verbose"));
+            })
+            .on("remove", (args) {
+                result = collectionRemove(args.option("db"),
+                    args.arg("name"), !args.flag("yes"));
             });
     }
     catch (InvalidArgumentsException e)
