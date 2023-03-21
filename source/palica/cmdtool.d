@@ -17,14 +17,18 @@
 +/
 module palica.cmdtool;
 
-import std.stdio : writefln, writeln, stderr;
 import palica.collbuilder;
 import palica.dblayer_impl;
 import palica.dblayer;
 import palica.fslayer_impl;
 import palica.fslayer;
 import palica.fsdb_helpers;
+import palica.tui_helpers;
+
 import std.typecons : Nullable;
+import std.algorithm : map;
+import std.array : array;
+import std.format : format;
 
 private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bool ask)
 {
@@ -32,16 +36,8 @@ private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bo
     Collection[] found = db.getCollectionsWithSamePath(normalized);
     if (found.length != 0)
     {
-        writefln("Warning! Existing collections with path '%s' found:", normalized);
-        foreach (c; found)
-            writeln(c.collName);
-
-        if (ask)
-        {
-            import palica.tui_helpers : promptYesNo;
-
-            return promptYesNo("Continue?");
-        }
+        auto names = found.map!(c => c.collName).array;
+        return prompt(PromptExistingCollectionsFound(normalized, names), ask);
     }
     return true;
 }
@@ -49,22 +45,22 @@ private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bo
 int collectionAdd(string dbFilename, string name, string path, bool verbose,
     bool ask)
 {
-    writefln("Adding collection '%s' into '%s' from '%s':", name, dbFilename,
-        path);
+    displayInfo(InfoAddingCollection(name, dbFilename, path));
+
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
     auto existingCol = db.getCollectionByName(name);
     if (!existingCol.isNull)
     {
-        writeln("Error! There's already a collection with that name.");
+        displayError(ErrorAddingCollectionExists(name));
         return 1;
     }
 
     auto fs = new FsLayerImpl();
     if (!continueWithDupPath(db, fs, path, ask))
     {
-        stderr.writeln("Abort for similar collection path.");
+        displayInfoSimilarCollectionPath();
         return 1;
     }
 
@@ -74,7 +70,7 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
         override void onNewDirEntry(ref const DirEntry e)
         {
             if (verbose)
-                writefln("Found %s", e.fsName);
+                displayInfo("Found %s".format(e.fsName));
 
             entries += 1;
         }
@@ -84,17 +80,17 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
     auto col = cb.createCollection(name, path, listener);
 
     cb.populateDirEntriesInDepth(col.rootId, path, listener);
-    writefln("Finished with %d entries.", entries);
+    displayInfo("Finished with %d entries.".format(entries));
     return 0;
 }
 
 private void printCollection(ref const Collection c, bool verbose)
 {
     if (verbose)
-        writefln("%d, \"%s\", \"%s\", root_id:%d", c.id, c.collName,
-            c.fsPath, c.rootId);
+        displayInfo("%d, \"%s\", \"%s\", root_id:%d".format(c.id, c.collName,
+            c.fsPath, c.rootId));
     else
-        writefln("\"%s\": \"%s\"", c.collName, c.fsPath);
+        displayInfo("\"%s\": \"%s\"".format(c.collName, c.fsPath));
 }
 
 private Nullable!Collection findCol(string dbFilename, DbReadLayer db, string name)
@@ -102,8 +98,8 @@ private Nullable!Collection findCol(string dbFilename, DbReadLayer db, string na
     auto found = db.getCollectionByName(name);
 
     if (found.isNull())
-        stderr.writefln("Collection \"%s\" not found in \"%s\".", name,
-            dbFilename);
+        displayError("Collection \"%s\" not found in \"%s\".".format(name,
+            dbFilename));
     return found;
 }
 
@@ -133,7 +129,7 @@ int collectionList(string dbFilename, bool verbose)
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
-    writefln("Collections in \"%s\":", dbFilename);
+    displayInfo("Collections in \"%s\":".format(dbFilename));
     auto cols = db.enumCollections();
     foreach (ref Collection c; cols)
     {
@@ -149,8 +145,8 @@ int collectionRemove(string dbFilename, string name, bool ask)
     auto fs = new FsLayerImpl();
     if (!fs.pathExists(dbFilename))
     {
-        writefln("There's no '%s' database to remove collection from.",
-            dbFilename);
+        displayError("There's no '%s' database to remove collection
+                from.".format(dbFilename));
         return 1;
     }
 
@@ -160,17 +156,17 @@ int collectionRemove(string dbFilename, string name, bool ask)
     auto found = db.getCollectionByName(name);
     if (found.isNull)
     {
-        writefln("Error: collection '%s' has not been found.", name);
+        displayError("Error: collection '%s' has not been found.".format(name));
         return 1;
     }
 
     import palica.tui_helpers : promptYesNo;
-    import std.format : format;
+
     if (!ask || promptYesNo("Delete collection '%s'?".format(name)))
     {
-        writefln("Deleting collection '%s'...", name);
+        displayInfo("Deleting collection '%s'...".format(name));
         db.deleteCollection(found.get());
-        writefln("Collection '%s' has been deleted.", name);
+        displayInfo("Collection '%s' has been deleted.".format(name));
         return 0;
     }
 
@@ -188,12 +184,12 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
         return 1;
 
     auto path = found.get().fsPath;
-    writefln("Syncing collection '%s' into '%s' from '%s':", name, dbFilename,
-        path);
+    displayInfo("Syncing collection '%s' into '%s' from '%s':".format(name,
+        dbFilename, path));
 
     if (!continueWithDupPath(db, fs, path, ask))
     {
-        stderr.writeln("Abort for similar collection path.");
+        displayInfoSimilarCollectionPath();
         return 1;
     }
 

@@ -2,19 +2,18 @@
 (C) 2023 Yury Benesh
 
 == Overview
-Distributed under GPLv3+ without any warranty, see file://LICENSE.
+Distributed under GPLv3+ without any warranty, see link:LICENSE[].
 
 Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
-** replace AutoDb with Unique/Scoped, move .close to destructor
-** replace writelns with error api, add colouring
-** sync, warn if there're collections with the same source path
 ** add file, dir, files from list, ignore hidden files/folders ".*"
+** sync, warn if there're collections with the same source path
 ** support media detection for collections from the same source path, e.g. for /cdrom
 via fs uuid (e.g. blkid)
+** add colouring
 
 * metadata database
 ** tags (keywords)
@@ -37,6 +36,8 @@ via fs uuid (e.g. blkid)
 
 == DONE
 * collection
+** replace writelns with error api
+** not applicable: replace AutoDb with Unique/Scoped, move .close to destructor
 ** remove
 ** add, warn if there're collections with the same source path
 * scan directory tree, build collection
