@@ -14,7 +14,8 @@ CREATE TABLE settings(id INTEGER PRIMARY KEY, setting_key TEXT UNIQUE NOT NULL, 
 INSERT INTO settings(setting_key, setting_value) VALUES('update_xmp', '1');
 COMMIT TRANSACTION;
 
--- general storage for glob patterns
+-- general storage for glob patterns, which can be used for filtering
+-- during populating the collection, or automatically tagging the files.
 BEGIN TRANSACTION;
 CREATE TABLE glob_patterns(id INTEGER PRIMARY KEY, regexp TEXT NOT NULL);
 INSERT INTO glob_patterns(id, regexp) VALUES(1, '/\.git$');
@@ -29,19 +30,34 @@ INSERT INTO glob_patterns(id, regexp) VALUES(9, '(?i)cr.$');
 INSERT INTO glob_patterns(id, regexp) VALUES(10, '(?i)xmp$');
 COMMIT TRANSACTION;
 
--- fill in default exclude list
 BEGIN TRANSACTION;
-CREATE TABLE exclude_globs(id INTEGER PRIMARY KEY, glob_pattern_id INTEGER UNIQUE NOT NULL);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(1);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(2);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(3);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(4);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(5);
-INSERT INTO exclude_globs(glob_pattern_id) VALUES(6);
-COMMIT TRANSACTION;
+CREATE TABLE glob_filters(id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL);
+-- 'include': 0 = exclude, 1 = include files matched with
+-- 'position' used for sorting, order of glob include/exclude application
+-- for very complex filtering, e.g. give three entries with positions
+-- 1) exclude all */some-dir/* files but
+-- 2) include jpegs
+-- 3) but if it's some '.preview', then exclude, it's easy to reason about.
+INSERT INTO glob_filters(id, name) VALUES(1, 'Default');
 
--- empty tables means include every directory entry that doesn't match exclude_globs
-CREATE TABLE include_globs(id INTEGER PRIMARY KEY, glob_pattern_id INTEGER UNIQUE NOT NULL);
+CREATE TABLE glob_filter_to_pattern(id INTEGER PRIMARY KEY,
+    filter_id INTEGER NOT NULL, glob_pattern_id INTEGER NOT NULL,
+    include INTEGER NOT NULL,
+    position INTEGER NOT NULL);
+-- fill in default exclude list
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 1, 0, 10);
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 2, 0, 11);
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 3, 0, 12);
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 4, 0, 13);
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 5, 0, 14);
+INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+    position) VALUES(1, 6, 0, 15);
+COMMIT TRANSACTION;
 
 -- collection reference, user name, path on the filesystem, last syncronization
 -- root id from dir_entries table

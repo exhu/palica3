@@ -58,6 +58,27 @@ struct DirEntry
     long fsSize;
 }
 
+struct GlobPattern
+{
+    DbId id;
+    string regexp;
+}
+
+struct GlobFilter
+{
+    DbId id;
+    string name;
+}
+
+struct GlobFilterToPattern
+{
+    DbId id;
+    DbId filter_id;
+    DbId glob_pattern_id;
+    bool include;
+    int position;
+}
+
 version (none) unittest
 {
     import std.stdio : writeln;
