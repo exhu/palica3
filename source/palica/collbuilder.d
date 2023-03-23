@@ -72,6 +72,7 @@ struct CollBuilder
         CollectionListener listener)
     {
         auto entries = fsRead.dirEntries(rootPath);
+        // TODO filter from globs
         auto subEntries = writeFsEntriesToDb(rootId, entries, listener);
         return subEntries;
     }
