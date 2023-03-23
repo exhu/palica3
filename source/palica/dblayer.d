@@ -73,8 +73,8 @@ struct GlobFilter
 struct GlobFilterToPattern
 {
     DbId id;
-    DbId filter_id;
-    DbId glob_pattern_id;
+    DbId filterId;
+    DbId globPatternId;
     bool include;
     int position;
 }
@@ -101,6 +101,14 @@ interface DbReadLayer
     DirEntry[] getDirEntriesOfParent(DbId id);
     Nullable!Collection getCollectionByName(string name);
     Collection[] getCollectionsWithSamePath(string path);
+
+    version (none)
+    {
+        // TODO
+        GlobPattern[] getGlobPatterns();
+        GlobFilter[] getGlobFilters();
+        GlobFilterToPattern[] getFilterPatterns(DbId filterId);
+    }
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly
@@ -129,7 +137,7 @@ interface DbWriteLayer
     DbId createDirEntry(ref const DirEntry entry);
 
     DbId mapDirEntryToParentDir(DbId entryId, DbId parentId);
-    
+
     // optimization hints before performing many inserts
     void beginTransaction();
     void commitTransaction();
