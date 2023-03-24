@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 +/
 module palica.dblayer;
+public import std.typecons : Nullable;
 
 /// sqlite INTEGER is signed (up to 8 bytes, i.e. 64-bit max)
 alias DbId = long;
@@ -42,6 +43,7 @@ struct Collection
     string collName;
     string fsPath;
     DbId rootId;
+    Nullable!DbId glob_filter_id;
 
     //version(unittest) mixin ImplToString;
 }
@@ -88,8 +90,6 @@ struct SettingValue
 
 interface DbReadLayer
 {
-    import std.typecons : Nullable;
-
     Collection[] enumCollections();
     DirEntry getDirEntryById(DbId id);
     DirEntry[] getDirEntriesOfParent(DbId id);
@@ -123,7 +123,7 @@ interface DbWriteLayer
     }
 
     /// Throws CollectionAlreadyExists, DbError
-    Collection createCollection(string name, string srcPath, DbId rootId);
+    Collection createCollection(string name, string srcPath, DbId rootId, Nullable!DbId);
     /// Throws DbError
     /// entry.id is ignored.
     DbId createDirEntry(ref const DirEntry entry);

@@ -60,7 +60,8 @@ struct CollBuilder
         FsDirEntry fsEntry = fsRead.dirEntry(srcPath);
         auto dirEnt = dirEntryFromFsDirEntry(fsEntry);
         dirEnt.id = dbWrite.createDirEntry(dirEnt);
-        auto col = dbWrite.createCollection(name, srcPath, dirEnt.id);
+        auto col = dbWrite.createCollection(name, srcPath, dirEnt.id,
+                Nullable!DbId());
         if (listener)
             listener.onNewDirEntry(dirEnt);
         return col;

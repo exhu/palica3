@@ -19,6 +19,8 @@ module palica.sqlhelpers;
 import d2sqlite3;
 import palica.helpers;
 import std.traits;
+import std.typecons : Nullable;
+import palica.dblayer : DbId;
 
 BindPairBase bindPair(string name, long value) pure nothrow
 {
@@ -28,6 +30,11 @@ BindPairBase bindPair(string name, long value) pure nothrow
 BindPairBase bindPair(string name, string value) pure nothrow
 {
     return new BindPair!string(name, value);
+}
+
+BindPairBase bindPair(string name, Nullable!DbId value) pure nothrow
+{
+    return new BindPair!(Nullable!DbId)(name, value);
 }
 
 abstract class BindPairBase
@@ -128,4 +135,3 @@ void bindAllAndExecNoResult(Args...)(ref Statement stmt, Args args)
         stmt.reset();
     stmt.execute();
 }
-

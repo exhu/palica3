@@ -23,7 +23,7 @@ import palica.sqlhelpers;
 import d2sqlite3;
 import std.stdio : writeln, stderr;
 import std.conv : to;
-import std.typecons : Unique;
+import std.typecons : Unique, nullable;
 
 final class FailedToOpenDb : Exception
 {
@@ -97,8 +97,8 @@ private final class DbData
             "INSERT INTO dir_entries(fs_name, fs_mod_time, last_sync_time, is_dir, fs_size)
                 VALUES(:fs_name, :fs_mod_time, :last_sync_time, :is_dir, :fs_size);");
         createCollectionStmt = db.prepare(
-            "INSERT INTO collections(coll_name, fs_path, root_id)
-                VALUES(:coll_name, :fs_path, :root_id);");
+            "INSERT INTO collections(coll_name, fs_path, root_id, glob_filter_id)
+                VALUES(:coll_name, :fs_path, :root_id, :glob_filter_id);");
         selectDirEntryByIdStmt = db.prepare(
             "SELECT id, fs_name, fs_mod_time, last_sync_time, is_dir, fs_size
                 FROM dir_entries WHERE id = ?");
@@ -114,14 +114,14 @@ private final class DbData
                 dir_to_sub d ON d.entry_id = e.id where d.directory_id = ?;");
 
         getCollectionsStmt = db.prepare(
-            "SELECT id, coll_name, fs_path, root_id FROM collections;");
+            "SELECT id, coll_name, fs_path, root_id, glob_filter_id FROM collections;");
 
         getCollectionByNameStmt = db.prepare(
-            "SELECT id, coll_name, fs_path, root_id FROM collections
+            "SELECT id, coll_name, fs_path, root_id, glob_filter_id FROM collections
                 WHERE coll_name = ?");
 
         getCollectionsByPathStmt = db.prepare(
-            "SELECT id, coll_name, fs_path, root_id FROM collections
+            "SELECT id, coll_name, fs_path, root_id, glob_filter_id FROM collections
                 WHERE fs_path = ?");
 
         delDirStatements = DelDirStatements(db);
@@ -188,12 +188,13 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return bindAllAndExec!Collection(db.getCollectionsStmt);
     }
 
-    override Collection createCollection(string name, string srcPath, DbId rootId)
+    override Collection createCollection(string name, string srcPath, DbId rootId, Nullable!DbId globFilterId)
     {
         auto id = idFromExec(db.createCollectionStmt, [
             bindPair(":coll_name", name),
             bindPair(":fs_path", srcPath),
             bindPair(":root_id", rootId),
+            bindPair(":glob_filter_id", globFilterId),
         ]);
         return Collection(id, name, srcPath, rootId);
     }
@@ -259,8 +260,6 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     {
         db.db.execute("ROLLBACK;");
     }
-
-    import std.typecons : Nullable, nullable;
 
     Nullable!Collection getCollectionByName(string name)
     {
@@ -338,8 +337,8 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
     // returns sorted by position
     override GlobFilterToPattern[] getFilterPatterns(DbId filterId)
     {
-        auto stmt = prepare("SELECT id, filter_id, glob_pattern_id,
-           include, position FROM glob_filter_to_pattern WHERE filter_id = ?1
+        auto stmt = prepare("SELECT id, glob_filter_id, glob_pattern_id,
+           include, position FROM glob_filter_to_pattern WHERE glob_filter_id = ?1
            ORDER BY position");
         return bindAllAndExec!GlobFilterToPattern(stmt, filterId);
     }
@@ -383,7 +382,7 @@ unittest
     auto e1 = DirEntry(0, "my", Clock.currTime(UTC()), Clock.currTime(UTC()), true);
     auto id = db.createDirEntry(e1);
     writeln("id=", id, e1);
-    auto coll = db.createCollection("mycoll", "srcpath", id);
+    auto coll = db.createCollection("mycoll", "srcpath", id, Nullable!DbId());
     writeln("coll=", coll);
     auto e2 = DirEntry(0, "second", Clock.currTime(UTC()), Clock.currTime(UTC()), false);
     auto id2 = db.createDirEntry(e2);
@@ -418,7 +417,7 @@ unittest
     assert(colls.length == 1);
     assert(colls[0].collName == "mycoll");
 
-    auto coll2 = db.createCollection("mycoll2", "srcpath", id);
+    auto coll2 = db.createCollection("mycoll2", "srcpath", id, Nullable!DbId());
 
     auto colByName = db.getCollectionByName("mycoll2");
     assert(!colByName.isNull());
@@ -493,7 +492,8 @@ unittest
 
     db.mapDirEntryToParentDir(e2.id, e1.id);
     db.mapDirEntryToParentDir(e3.id, e2.id);
-    auto coll2 = db.createCollection("mycoll2", "srcpath", e1.id);
+    auto coll2 = db.createCollection("mycoll2", "srcpath", e1.id,
+        Nullable!DbId());
 
     auto found1 = db.getCollectionByName("mycoll2");
     assert(!found1.isNull);

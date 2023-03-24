@@ -9,7 +9,8 @@ COMMIT TRANSACTION;
 
 -- settings used to populate the db, e.g. include/exclude glob masks, mime types
 BEGIN TRANSACTION;
-CREATE TABLE settings(id INTEGER PRIMARY KEY, setting_key TEXT UNIQUE NOT NULL, setting_value TEXT NOT NULL);
+CREATE TABLE settings(id INTEGER PRIMARY KEY,
+    setting_key TEXT UNIQUE NOT NULL,setting_value TEXT NOT NULL);
 -- rewrite sidecar .xmp file on adding/removing tags
 INSERT INTO settings(setting_key, setting_value)
     VALUES('update_xmp', '1');
@@ -44,28 +45,28 @@ CREATE TABLE glob_filters(id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL);
 INSERT INTO glob_filters(id, name) VALUES(1, 'default');
 
 CREATE TABLE glob_filter_to_pattern(id INTEGER PRIMARY KEY,
-    filter_id INTEGER NOT NULL, glob_pattern_id INTEGER NOT NULL,
+    glob_filter_id INTEGER NOT NULL, glob_pattern_id INTEGER NOT NULL,
     include INTEGER NOT NULL,
     position INTEGER NOT NULL);
 -- fill in default exclude list
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 1, 0, 10);
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 2, 0, 11);
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 3, 0, 12);
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 4, 0, 13);
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 5, 0, 14);
-INSERT INTO glob_filter_to_pattern(filter_id, glob_pattern_id, include,
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 6, 0, 15);
 COMMIT TRANSACTION;
 
 -- collection reference, user name, path on the filesystem, last syncronization
 -- root id from dir_entries table
 CREATE TABLE collections(id INTEGER PRIMARY KEY, coll_name TEXT UNIQUE NOT NULL,
-    fs_path TEXT NOT NULL, root_id INTEGER NOT NULL);
+    fs_path TEXT NOT NULL, root_id INTEGER NOT NULL, glob_filter_id INTEGER);
 
 -- timestamps in nanoseconds since unix epoch
 -- last_sync_time must be updated when metadata is reread from the file for xmp/db.
