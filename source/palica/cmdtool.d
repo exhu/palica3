@@ -24,9 +24,10 @@ import palica.fslayer_impl;
 import palica.fslayer;
 import palica.fsdb_helpers;
 import palica.tui_helpers;
+import palica.dbhelpers;
 
 import std.typecons : Nullable;
-import std.algorithm : map;
+import std.algorithm : map, filter;
 import std.array : array;
 import std.format : format;
 
@@ -216,3 +217,27 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
     +/
     return 0;
 }
+
+int filtersDisplay(string dbFilename)
+{
+    auto adb = AutoDb(dbFilename);
+    auto db = adb.db;
+    auto settings = settingsMapFromDb(db.getSettings());
+    displayInfo("Default filter is '%s'.".format(settings["default_filter"]));
+    auto filters = db.getGlobFilters();
+    auto patterns = db.getGlobPatterns();
+    auto patmap = patternMapFromDb(patterns);
+    foreach(f; filters)
+    {
+        displayInfo("%d: %s".format(f.id, f.name));
+        auto fpatterns = db.getFilterPatterns(f.id);
+        foreach(fp; fpatterns)
+        {
+            auto w = fp.include ? "include" : "exclude";
+            displayInfo("%s: %s".format(w, patmap[fp.globPatternId].regexp));
+        }
+    }
+    
+    return 0;
+}
+

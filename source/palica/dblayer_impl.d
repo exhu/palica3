@@ -344,6 +344,13 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         return bindAllAndExec!GlobFilterToPattern(stmt, filterId);
     }
 
+    override SettingValue[] getSettings()
+    {
+        auto stmt = prepare("SELECT id, setting_key, setting_value FROM
+            settings");
+        return bindAllAndExec!SettingValue(stmt);
+    }
+
     Statement prepare(string sql)
     {
         return db.db.prepare(sql);
@@ -523,6 +530,16 @@ unittest
     assert(filters.length > 0);
     auto filterPatterns = db.getFilterPatterns(filters[0].id);
     writeln("filter ", filters[0].name, " patterns=", filterPatterns);
+}
+
+unittest
+{
+    writeln("settings test");
+    auto adb = AutoDb(":memory:");
+    auto db = adb.db;
+    auto settings = db.getSettings();
+    writeln(settings);
+    assert(settings.length > 0);
 }
 
 version (none) unittest

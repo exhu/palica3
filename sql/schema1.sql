@@ -14,7 +14,7 @@ CREATE TABLE settings(id INTEGER PRIMARY KEY, setting_key TEXT UNIQUE NOT NULL, 
 INSERT INTO settings(setting_key, setting_value)
     VALUES('update_xmp', '1');
 INSERT INTO settings(setting_key, setting_value)
-    VALUES('default_filter', 'Default');
+    VALUES('default_filter', 'default');
 COMMIT TRANSACTION;
 
 -- general storage for glob patterns, which can be used for filtering
@@ -41,7 +41,7 @@ CREATE TABLE glob_filters(id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL);
 -- 1) exclude all */some-dir/* files but
 -- 2) include jpegs
 -- 3) but if it's some '.preview', then exclude, it's easy to reason about.
-INSERT INTO glob_filters(id, name) VALUES(1, 'Default');
+INSERT INTO glob_filters(id, name) VALUES(1, 'default');
 
 CREATE TABLE glob_filter_to_pattern(id INTEGER PRIMARY KEY,
     filter_id INTEGER NOT NULL, glob_pattern_id INTEGER NOT NULL,

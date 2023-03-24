@@ -43,6 +43,8 @@ int main(string[] args)
             .add(new Command("remove")
                     .summary("remove collection")
                     .add(new Argument("name", "collection name")))
+            .add(new Command("filters")
+                    .summary("display file path filters"))
             .parseArgs(args);
 
         parsed.on("add", (ProgramArgs args) {
@@ -62,6 +64,9 @@ int main(string[] args)
             .on("remove", (args) {
                 result = collectionRemove(args.option("db"),
                     args.arg("name"), !args.flag("yes"));
+            })
+            .on("filters", (args) {
+                result = filtersDisplay(args.option("db"));
             });
     }
     catch (InvalidArgumentsException e)

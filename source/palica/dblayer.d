@@ -79,17 +79,11 @@ struct GlobFilterToPattern
     int position;
 }
 
-version (none) unittest
+struct SettingValue
 {
-    import std.stdio : writeln;
-
-    auto a = Collection(1, "aa", "ff", 1);
-    writeln(a);
-
-    import std.digest.sha;
-
-    auto h = sha256Of("abc");
-    writeln(toHexString!(LetterCase.lower)(h));
+    DbId id;
+    string key;
+    string value;
 }
 
 interface DbReadLayer
@@ -106,6 +100,7 @@ interface DbReadLayer
     GlobFilter[] getGlobFilters();
     // returns sorted by position
     GlobFilterToPattern[] getFilterPatterns(DbId filterId);
+    SettingValue[] getSettings();
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly
@@ -145,4 +140,17 @@ interface DbWriteLayer
     void deleteDirEntry(DbId id, bool newTransaction = true);
 
     void deleteCollection(Collection col);
+}
+
+version (none) unittest
+{
+    import std.stdio : writeln;
+
+    auto a = Collection(1, "aa", "ff", 1);
+    writeln(a);
+
+    import std.digest.sha;
+
+    auto h = sha256Of("abc");
+    writeln(toHexString!(LetterCase.lower)(h));
 }
