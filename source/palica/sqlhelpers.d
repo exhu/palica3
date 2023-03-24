@@ -18,6 +18,7 @@
 module palica.sqlhelpers;
 import d2sqlite3;
 import palica.helpers;
+import std.traits;
 
 BindPairBase bindPair(string name, long value) pure nothrow
 {
@@ -95,13 +96,29 @@ T[] structsFromRows(T)(ref ResultRange rows)
     return result;
 }
 
+T[] valuesFromRows(T)(ref ResultRange rows)
+{
+    T[] result;
+
+    foreach (ref Row r; rows)
+    {
+        auto v = r.peek!T(0);
+        result ~= v;
+    }
+
+    return result;
+}
+
 T[] bindAllAndExec(T, Args...)(ref Statement stmt, Args args)
 {
     stmt.bindAll(args);
     scope (exit)
         stmt.reset();
     auto rows = stmt.execute();
-    return structsFromRows!T(rows);
+    static if (isAggregateType!(T))
+        return structsFromRows!T(rows);
+    else
+        return valuesFromRows!T(rows);
 }
 
 void bindAllAndExecNoResult(Args...)(ref Statement stmt, Args args)
