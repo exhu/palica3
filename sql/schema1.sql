@@ -11,7 +11,10 @@ COMMIT TRANSACTION;
 BEGIN TRANSACTION;
 CREATE TABLE settings(id INTEGER PRIMARY KEY, setting_key TEXT UNIQUE NOT NULL, setting_value TEXT NOT NULL);
 -- rewrite sidecar .xmp file on adding/removing tags
-INSERT INTO settings(setting_key, setting_value) VALUES('update_xmp', '1');
+INSERT INTO settings(setting_key, setting_value)
+    VALUES('update_xmp', '1');
+INSERT INTO settings(setting_key, setting_value)
+    VALUES('default_filter', 'Default');
 COMMIT TRANSACTION;
 
 -- general storage for glob patterns, which can be used for filtering

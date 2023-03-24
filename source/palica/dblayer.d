@@ -102,13 +102,10 @@ interface DbReadLayer
     Nullable!Collection getCollectionByName(string name);
     Collection[] getCollectionsWithSamePath(string path);
 
-    version (none)
-    {
-        // TODO
-        GlobPattern[] getGlobPatterns();
-        GlobFilter[] getGlobFilters();
-        GlobFilterToPattern[] getFilterPatterns(DbId filterId);
-    }
+    GlobPattern[] getGlobPatterns();
+    GlobFilter[] getGlobFilters();
+    // returns sorted by position
+    GlobFilterToPattern[] getFilterPatterns(DbId filterId);
 }
 
 // On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly

@@ -324,6 +324,26 @@ final class DbLayerImpl : DbReadLayer, DbWriteLayer
         commitTransaction();
     }
 
+    override GlobPattern[] getGlobPatterns()
+    {
+        auto stmt = prepare("SELECT id, regexp FROM glob_patterns");
+        return bindAllAndExec!GlobPattern(stmt);
+    }
+
+    override GlobFilter[] getGlobFilters()
+    {
+        auto stmt = prepare("SELECT id, name FROM glob_filters");
+        return bindAllAndExec!GlobFilter(stmt);
+    }
+    // returns sorted by position
+    override GlobFilterToPattern[] getFilterPatterns(DbId filterId)
+    {
+        auto stmt = prepare("SELECT id, filter_id, glob_pattern_id,
+           include, position FROM glob_filter_to_pattern WHERE filter_id = ?1
+           ORDER BY position");
+        return bindAllAndExec!GlobFilterToPattern(stmt, filterId);
+    }
+
     Statement prepare(string sql)
     {
         return db.db.prepare(sql);
@@ -477,9 +497,9 @@ unittest
     {
         long count;
     }
+
     auto res1 = bindAllAndExec!Res(countStmt);
     assert(res1[0].count == 3);
-
 
     db.deleteCollection(coll2);
 
@@ -488,6 +508,21 @@ unittest
 
     auto res2 = bindAllAndExec!Res(countStmt);
     assert(res2[0].count == 0);
+}
+
+unittest
+{
+    writeln("filters test");
+    auto adb = AutoDb(":memory:");
+    auto db = adb.db;
+    auto patterns = db.getGlobPatterns();
+    writeln("patterns =", patterns);
+    assert(patterns.length > 0);
+    auto filters = db.getGlobFilters();
+    writeln("filters =", filters);
+    assert(filters.length > 0);
+    auto filterPatterns = db.getFilterPatterns(filters[0].id);
+    writeln("filter ", filters[0].name, " patterns=", filterPatterns);
 }
 
 version (none) unittest
