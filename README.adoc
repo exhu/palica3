@@ -9,6 +9,10 @@ primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
+** save filter name for collection
+** use filter when populating/sync collection
+** don't allow to delete patterns used in a filter
+** don't allow to delete filters used by collections
 ** add file, dir, files from list, ignore hidden files/folders ".*"
 ** sync, warn if there're collections with the same source path
 ** support media detection for collections from the same source path, e.g. for /cdrom
