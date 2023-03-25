@@ -44,6 +44,7 @@ struct CollBuilder
         fsRead = aFsRead;
     }
 
+    // TODO glob_filter
     Collection createCollection(string name, string path,
         CollectionListener listener = null)
     {

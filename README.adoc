@@ -61,3 +61,40 @@ via fs uuid (e.g. blkid)
 * sqlite library (libsqlite3-dev)
 
 * any image viewer, e.g. feh or gwenview
+
+== Versions Planning
+=== MVP
+* Collections management
+** Add
+*** Using glob (file path) filter
+** Remove
+** Sync filesystem
+*** Ask if deleted files are really deleted or there's fs mismatch
+** Tags from xmp
+* Select files (print file list)
+** by path (collection:/path)
+** by path filter
+** by tags
+*** if contains any of the selected tags
+*** if contains no tags
+
+=== Version 1
+* Normalize program output
+** all diagnostic/debug messages to stderr
+** output must be parseable
+* Path filter editing
+* Generate xmp by exiftool
+* File hash
+* Tag add, remove, update xmp with exiftool
+* File rename, delete, move commands
+
+=== Version 2
+* Thumbnails
+* Device id
+
+=== Version N
+* Use file hash to detect moves, renames
+* Thumbnails browser
+
+=== Version N+1
+* Mime types
