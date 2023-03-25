@@ -78,7 +78,7 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
     };
 
     auto cb = CollBuilder(db, fs);
-    auto col = cb.createCollection(name, path, listener);
+    auto col = cb.createCollection(name, path, Nullable!DbId(), listener);
 
     cb.populateDirEntriesInDepth(col.rootId, path, listener);
     displayInfo("Finished with %d entries.".format(entries));

@@ -44,9 +44,8 @@ struct CollBuilder
         fsRead = aFsRead;
     }
 
-    // TODO glob_filter
-    Collection createCollection(string name, string path,
-        CollectionListener listener = null)
+    Collection createCollection(string name, string path, Nullable!DbId
+            filterId, CollectionListener listener = null)
     {
         import palica.fsdb_helpers : dirEntryFromFsDirEntry;
 
@@ -62,7 +61,7 @@ struct CollBuilder
         auto dirEnt = dirEntryFromFsDirEntry(fsEntry);
         dirEnt.id = dbWrite.createDirEntry(dirEnt);
         auto col = dbWrite.createCollection(name, srcPath, dirEnt.id,
-                Nullable!DbId());
+                filterId);
         if (listener)
             listener.onNewDirEntry(dirEnt);
         return col;
@@ -162,7 +161,8 @@ unittest
         }
     };
 
-    auto col = cb.createCollection("sample-col", "./sample-data", listener);
+    auto col = cb.createCollection("sample-col", "./sample-data",
+            Nullable!DbId(), listener);
     writeln("col=", col);
 
 

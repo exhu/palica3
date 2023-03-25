@@ -17,8 +17,10 @@
 +/
 module palica.fsdb_helpers;
 
-import palica.dblayer : DirEntry, DbId, DbReadLayer;
+import palica.dblayer : DirEntry, DbId, DbReadLayer, GlobFilterToPattern,
+    GlobPattern;
 import palica.fslayer : FsDirEntry;
+import palica.globfilter;
 
 DirEntry dirEntryFromFsDirEntry(FsDirEntry fsEntry)
 {
@@ -43,7 +45,7 @@ void dumpDirEntry(ref const DirEntry e, int level = 0,
         }
         return s;
     }
-    
+
     if (verbose)
         writefln("%s\"%s\" %sSz: %d M: %s S: %s", indent(), e.fsName,
             e.isDir ? "DIR " : "",
@@ -68,4 +70,35 @@ void dumpDirEntryAsTree(DbId rootId, DbReadLayer dbRead, int level = 0,
             dumpDirEntryAsTree(i.id, dbRead, level + 1, verbose);
         }
     }
+}
+
+FsGlobFilter fsGlobFilterFromDb(GlobFilterToPattern[] fops, GlobPattern[] fpatterns)
+{
+    import std.algorithm : map;
+    import std.array : array;
+
+    string[] textPatterns;
+    size_t[DbId] textPatternIndex;
+    foreach (i, p; fpatterns)
+    {
+        textPatterns ~= p.regexp;
+        textPatternIndex[p.id] = i;
+    }
+
+    GlobOperation[] ops = map!((fop) {
+        auto opkind = fop.include ? GlobOperation.Kind.include : GlobOperation.Kind.exclude;
+        auto patIndex = textPatternIndex[fop.globPatternId];
+
+        return GlobOperation(opkind, patIndex);
+    })(fops).array;
+
+    auto gpatterns = GlobPatterns(textPatterns);
+
+    return FsGlobFilter(gpatterns, ops);
+}
+
+unittest
+{
+    // TODO
+// FsGlobFilter fsGlobFilterFromDb(GlobFilterToPattern[] fops, GlobPattern[] fpatterns)
 }

@@ -32,6 +32,15 @@ INSERT INTO glob_patterns(id, regexp) VALUES(7, '(?i)jpe?g$');
 INSERT INTO glob_patterns(id, regexp) VALUES(8, '(?i)orf$');
 INSERT INTO glob_patterns(id, regexp) VALUES(9, '(?i)cr.$');
 INSERT INTO glob_patterns(id, regexp) VALUES(10, '(?i)xmp$');
+INSERT INTO glob_patterns(id, regexp) VALUES(11, '(?i)png$');
+INSERT INTO glob_patterns(id, regexp) VALUES(12, '(?i)webp$');
+INSERT INTO glob_patterns(id, regexp) VALUES(13, '(?i)webm$');
+INSERT INTO glob_patterns(id, regexp) VALUES(14, '(?i)mkv$');
+INSERT INTO glob_patterns(id, regexp) VALUES(15, '(?i)mov$');
+INSERT INTO glob_patterns(id, regexp) VALUES(16, '(?i)avi$');
+INSERT INTO glob_patterns(id, regexp) VALUES(17, '(?i)jxl$');
+-- no extension
+INSERT INTO glob_patterns(id, regexp) VALUES(18, '(/|^)[^./]+[.]?$');
 COMMIT TRANSACTION;
 
 BEGIN TRANSACTION;

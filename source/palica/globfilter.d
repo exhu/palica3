@@ -31,20 +31,15 @@ struct GlobOperation
     }
 
     Kind operation;
-    size_t[] patIndexes;
+    size_t patIndex;
 
-    Nullable!size_t match(string text, const ref GlobPatterns allPatterns) const
+    bool match(string text, const ref GlobPatterns allPatterns) const
     {
-        foreach(i; patIndexes)
-        {
-            if (allPatterns.match(text, i))
-                return Nullable!size_t(i);
-        }
-        return Nullable!size_t();
+        return allPatterns.match(text, patIndex);
     }
 }
 
-struct GlobFilter
+struct FsGlobFilter
 {
     GlobPatterns patterns;
     GlobOperation[] ops; 
@@ -55,10 +50,9 @@ struct GlobFilter
         
         foreach(op; ops)
         {
-            auto matched = op.match(text, patterns);
-            if (!matched.isNull)
+            if (op.match(text, patterns))
             {
-                auto p = patterns.regexps[matched.get()];
+                auto p = patterns.regexps[op.patIndex];
                 debug writeln("matched %s", p);
                 if (op.operation == GlobOperation.Kind.exclude)
                     res = false;
@@ -74,13 +68,28 @@ struct GlobFilter
 unittest
 {
     auto patterns = GlobPatterns(["middle", "^middle$", "ddl"]);
-    auto ops = [GlobOperation(GlobOperation.Kind.include, [2, 0]),
-         GlobOperation(GlobOperation.Kind.exclude, [1])];
+    auto ops = [GlobOperation(GlobOperation.Kind.include, 2), GlobOperation(GlobOperation.Kind.include, 0),
+         GlobOperation(GlobOperation.Kind.exclude, 1)];
 
-    auto f1 = GlobFilter(patterns, ops);
+    auto f1 = FsGlobFilter(patterns, ops);
     assert(f1.accept("middle") == false);
     assert(f1.accept(" middle") == true);
     assert(f1.accept("123ddll") == true);
+}
+
+unittest
+{
+    writeln("patterns match tests");
+    immutable pat = "(/|^)[^./]+[.]?$";
+    assert(matchFirst("abc", pat));
+    assert(matchFirst("abc.", pat));
+    assert(!matchFirst("abc.jpg", pat));
+
+    assert(matchFirst("/.kk/abc", pat));
+    assert(matchFirst("/s/v/abc.", pat));
+    auto a = matchFirst("/abc.jpg", pat);
+    writeln("matched=", a);
+    assert(!a);
 }
 
 version(none) unittest
