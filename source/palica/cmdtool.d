@@ -25,6 +25,7 @@ import palica.fslayer;
 import palica.fsdb_helpers;
 import palica.tui_helpers;
 import palica.dbhelpers;
+import palica.globfilter;
 
 import std.typecons : Nullable;
 import std.algorithm : map, filter;
@@ -76,11 +77,13 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
             entries += 1;
         }
     };
-
+    // TODO get default filter
+    auto fsGlobFilter = FsGlobFilter();
     auto cb = CollBuilder(db, fs);
+
     auto col = cb.createCollection(name, path, Nullable!DbId(), listener);
 
-    cb.populateDirEntriesInDepth(col.rootId, path, listener);
+    cb.populateDirEntriesInDepth(col.rootId, path, listener, fsGlobFilter);
     displayInfo("Finished with %d entries.".format(entries));
     return 0;
 }

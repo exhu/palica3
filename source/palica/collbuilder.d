@@ -21,6 +21,7 @@ import palica.dblayer;
 import palica.fslayer;
 import std.stdio : writeln;
 import palica.fsdb_helpers;
+import palica.globfilter;
 
 interface CollectionListener
 {
@@ -70,28 +71,31 @@ struct CollBuilder
     /// call after createCollection to populate directory tree
     /// root = root directory
     private SubDir[] populateDirEntries(DbId rootId, string rootPath,
-        CollectionListener listener)
+        CollectionListener listener, ref const FsGlobFilter globFilter)
     {
-        auto entries = fsRead.dirEntries(rootPath);
-        // TODO filter from globs
+        import std.algorithm : filter;
+        import std.array : array;
+
+        auto entries = filter!(e => globFilter.accept(e.name))(fsRead.dirEntries(rootPath)).array;
         auto subEntries = writeFsEntriesToDb(rootId, entries, listener);
         return subEntries;
     }
 
     void populateDirEntriesInDepth(DbId rootId, string rootPath,
-        CollectionListener listener)
+        CollectionListener listener, ref const FsGlobFilter globFilter)
     {
         dbWrite.beginTransaction();
         scope(exit)
             dbWrite.commitTransaction();
 
-        SubDir[] dirs = populateDirEntries(rootId, rootPath, listener);
+        SubDir[] dirs = populateDirEntries(rootId, rootPath, listener,
+                globFilter);
         while (dirs.length > 0)
         {
             SubDir[] subDirs;
             foreach (ref d; dirs)
             {
-                subDirs ~= populateDirEntries(d.id, d.path, listener);
+                subDirs ~= populateDirEntries(d.id, d.path, listener, globFilter);
             }
             dirs = subDirs;
         }
@@ -153,11 +157,13 @@ unittest
 
     auto cb = CollBuilder(db, fs);
 
+    size_t newDirEntries = 0;
     auto listener = new class CollectionListener
     {
         override void onNewDirEntry(ref const DirEntry dir)
         {
             writeln("onNewDirEntry: ", dir);
+            newDirEntries++;
         }
     };
 
@@ -166,9 +172,12 @@ unittest
     writeln("col=", col);
 
 
-    cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener);
+    auto fsFilter = FsGlobFilter();
+    cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener, fsFilter);
     writeln("dump tree:");
     auto rootEntry = db.getDirEntryById(col.rootId);
     dumpDirEntry(rootEntry);
     dumpDirEntryAsTree(col.rootId, db, 1);
+    
+    assert(newDirEntries >= 2);
 }
