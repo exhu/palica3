@@ -99,6 +99,21 @@ FsGlobFilter fsGlobFilterFromDb(GlobFilterToPattern[] fops, GlobPattern[] fpatte
 
 unittest
 {
-    // TODO
-// FsGlobFilter fsGlobFilterFromDb(GlobFilterToPattern[] fops, GlobPattern[] fpatterns)
+    auto pats = [
+        GlobPattern(31, "abc"), GlobPattern(333, "kor"), GlobPattern(22,
+            "zz")
+    ];
+    auto fops = [
+        GlobFilterToPattern(100, 1, 31, true, 1),
+        GlobFilterToPattern(101, 1, 333, false, 2),
+        GlobFilterToPattern(102, 1, 22, true, 3),
+    ];
+
+    auto filter = fsGlobFilterFromDb(fops, pats);
+    import std.stdio : writeln;
+    writeln("filter=", filter);
+    assert(filter.accept("korzz") == true);
+    assert(filter.accept("korabc") == false);
+    assert(filter.accept("abc") == true);
+    assert(filter.accept("kor") == false);
 }
