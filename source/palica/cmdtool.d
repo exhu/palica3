@@ -77,11 +77,22 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
             entries += 1;
         }
     };
-    // TODO get default filter
-    auto fsGlobFilter = FsGlobFilter();
-    auto cb = CollBuilder(db, fs);
+    auto settings = settingsMapFromDb(db.getSettings());
+    auto defaultFilterId = getDefaultFilterId(settings);
 
-    auto col = cb.createCollection(name, path, Nullable!DbId(), listener);
+
+    FsGlobFilter fsGlobFilterFromId(DbId filterId)
+    {
+        import palica.fsdb_helpers : fsGlobFilterFromDb;
+        return fsGlobFilterFromDb(db.getFilterPatterns(filterId),
+                db.getGlobPatterns());
+    }
+
+    auto fsGlobFilter = defaultFilterId.isNull ? FsGlobFilter() :
+        fsGlobFilterFromId(defaultFilterId.get());
+
+    auto cb = CollBuilder(db, fs);
+    auto col = cb.createCollection(name, path, defaultFilterId, listener);
 
     cb.populateDirEntriesInDepth(col.rootId, path, listener, fsGlobFilter);
     displayInfo("Finished with %d entries.".format(entries));
@@ -92,7 +103,7 @@ private void printCollection(ref const Collection c, bool verbose)
 {
     if (verbose)
         displayInfo("%d, \"%s\", \"%s\", root_id:%d".format(c.id, c.collName,
-            c.fsPath, c.rootId));
+                c.fsPath, c.rootId));
     else
         displayInfo("\"%s\": \"%s\"".format(c.collName, c.fsPath));
 }
@@ -103,7 +114,7 @@ private Nullable!Collection findCol(string dbFilename, DbReadLayer db, string na
 
     if (found.isNull())
         displayError("Collection \"%s\" not found in \"%s\".".format(name,
-            dbFilename));
+                dbFilename));
     return found;
 }
 
@@ -189,7 +200,7 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
 
     auto path = found.get().fsPath;
     displayInfo("Syncing collection '%s' into '%s' from '%s':".format(name,
-        dbFilename, path));
+            dbFilename, path));
 
     if (!continueWithDupPath(db, fs, path, ask))
     {
@@ -221,26 +232,49 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
     return 0;
 }
 
+private Nullable!DbId getDefaultFilterId(string[string] settings)
+{
+    auto v = settings["default_filter"];
+    if (v && v.length)
+    {
+        import std.conv : to;
+
+        return Nullable!DbId(to!long(v));
+    }
+    return Nullable!DbId();
+}
+
 int filtersDisplay(string dbFilename)
 {
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
     auto settings = settingsMapFromDb(db.getSettings());
-    displayInfo("Default filter is '%s'.".format(settings["default_filter"]));
     auto filters = db.getGlobFilters();
+    auto defaultFilterId = getDefaultFilterId(settings);
+    if (!defaultFilterId.isNull)
+    {
+        import std.algorithm : find;
+
+        auto foundDefault = find!(e => e.id ==
+                defaultFilterId)(filters)[0];
+        displayInfo("Default filter is '%s'.".format(foundDefault.name));
+    }
+    else
+    {
+        displayInfo("No default filter.");
+    }
     auto patterns = db.getGlobPatterns();
     auto patmap = patternMapFromDb(patterns);
-    foreach(f; filters)
+    foreach (f; filters)
     {
         displayInfo("%d: %s".format(f.id, f.name));
         auto fpatterns = db.getFilterPatterns(f.id);
-        foreach(fp; fpatterns)
+        foreach (fp; fpatterns)
         {
             auto w = fp.include ? "include" : "exclude";
             displayInfo("%s: %s".format(w, patmap[fp.globPatternId].regexp));
         }
     }
-    
+
     return 0;
 }
-
