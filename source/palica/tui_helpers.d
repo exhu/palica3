@@ -38,15 +38,20 @@ bool prompt(const PromptExistingCollectionsFound msg, bool ask)
     return true;
 }
 
+import std.typecons : Nullable;
+import std.conv : to;
+
 struct InfoAddingCollection
 {
     string name, dbFilename, path;
+    Nullable!long filterId;
 }
 
 void displayInfo(const InfoAddingCollection msg)
 {
-    writefln("Adding collection '%s' into '%s' from '%s':", msg.name,
-        msg.dbFilename, msg.path);
+    writefln("Adding collection '%s' into '%s' from '%s', filter: %s:", msg.name,
+        msg.dbFilename, msg.path, msg.filterId.isNull ? "none" :
+        to!string(msg.filterId.get()));
 }
 
 struct ErrorAddingCollectionExists

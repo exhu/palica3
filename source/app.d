@@ -34,7 +34,8 @@ int main(string[] args)
             .add(new Command("add")
                     .summary("add collection")
                     .add(new Argument("name", "collection name"))
-                    .add(new Argument("path", "path to directory")))
+                    .add(new Argument("path", "path to directory"))
+                    .add(new Option(null, "filter", "glob filter id")))
             .add(new Command("list")
                     .summary("list collections"))
             .add(new Command("tree")
@@ -48,11 +49,16 @@ int main(string[] args)
             .parseArgs(args);
 
         parsed.on("add", (ProgramArgs args) {
+            import std.conv : to;
+            auto filterIdOption = args.option("filter");
+            Nullable!long filterId = filterIdOption is null ? Nullable!long() :
+                Nullable!long(to!long(filterIdOption));
             result = collectionAdd(args.option("db"),
                 args.arg("name"),
                 args.arg("path"),
                 args.flag("verbose"),
-                !args.flag("yes"));
+                !args.flag("yes"),
+                filterId);
         })
             .on("list", (args) {
                 result = collectionList(args.option("db"), args.flag("verbose"));

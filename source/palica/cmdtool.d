@@ -27,7 +27,7 @@ import palica.tui_helpers;
 import palica.dbhelpers;
 import palica.globfilter;
 
-import std.typecons : Nullable;
+public import std.typecons : Nullable;
 import std.algorithm : map, filter;
 import std.array : array;
 import std.format : format;
@@ -44,13 +44,26 @@ private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bo
     return true;
 }
 
-int collectionAdd(string dbFilename, string name, string path, bool verbose,
-    bool ask)
+enum UseFilter
 {
-    displayInfo(InfoAddingCollection(name, dbFilename, path));
+    defaultFilter,
+    user,
+    none,
+}
 
+int collectionAdd(string dbFilename, string name, string path, bool verbose,
+    bool ask, Nullable!long userFilterId, UseFilter filterToUse)
+{
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
+
+    auto settings = settingsMapFromDb(db.getSettings());
+    auto defaultFilterId = getDefaultFilterId(settings);
+    const auto selectedFilterId = userFilterId.isNull ? defaultFilterId : userFilterId;
+
+    // TODO check if filter exists
+
+    displayInfo(InfoAddingCollection(name, dbFilename, path, selectedFilterId));
 
     auto existingCol = db.getCollectionByName(name);
     if (!existingCol.isNull)
@@ -77,22 +90,20 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
             entries += 1;
         }
     };
-    auto settings = settingsMapFromDb(db.getSettings());
-    auto defaultFilterId = getDefaultFilterId(settings);
-
 
     FsGlobFilter fsGlobFilterFromId(DbId filterId)
     {
         import palica.fsdb_helpers : fsGlobFilterFromDb;
+
         return fsGlobFilterFromDb(db.getFilterPatterns(filterId),
-                db.getGlobPatterns());
+            db.getGlobPatterns());
     }
 
-    auto fsGlobFilter = defaultFilterId.isNull ? FsGlobFilter() :
-        fsGlobFilterFromId(defaultFilterId.get());
+    auto fsGlobFilter = selectedFilterId.isNull ? FsGlobFilter() : fsGlobFilterFromId(
+        selectedFilterId.get());
 
     auto cb = CollBuilder(db, fs);
-    auto col = cb.createCollection(name, path, defaultFilterId, listener);
+    auto col = cb.createCollection(name, path, selectedFilterId, listener);
 
     cb.populateDirEntriesInDepth(col.rootId, path, listener, fsGlobFilter);
     displayInfo("Finished with %d entries.".format(entries));
@@ -257,7 +268,8 @@ int filtersDisplay(string dbFilename)
 
         auto foundDefault = find!(e => e.id ==
                 defaultFilterId)(filters)[0];
-        displayInfo("Default filter is '%s'.".format(foundDefault.name));
+        displayInfo("Default filter is %d,'%s'.".format(foundDefault.id,
+                foundDefault.name));
     }
     else
     {
@@ -267,12 +279,12 @@ int filtersDisplay(string dbFilename)
     auto patmap = patternMapFromDb(patterns);
     foreach (f; filters)
     {
-        displayInfo("%d: %s".format(f.id, f.name));
+        displayInfo("%d,%s".format(f.id, f.name));
         auto fpatterns = db.getFilterPatterns(f.id);
         foreach (fp; fpatterns)
         {
             auto w = fp.include ? "include" : "exclude";
-            displayInfo("%s: %s".format(w, patmap[fp.globPatternId].regexp));
+            displayInfo("%s,%s".format(w, patmap[fp.globPatternId].regexp));
         }
     }
 

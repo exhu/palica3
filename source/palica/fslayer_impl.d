@@ -90,6 +90,7 @@ final class FsLayerImpl : FsReadLayer
     override string normalizedAbsPath(string path)
     {
         import std.path : absolutePath, buildNormalizedPath;
+
         return path.absolutePath().buildNormalizedPath();
     }
 }
