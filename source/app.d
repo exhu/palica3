@@ -35,7 +35,7 @@ int main(string[] args)
                     .summary("add collection")
                     .add(new Argument("name", "collection name"))
                     .add(new Argument("path", "path to directory"))
-                    .add(new Option(null, "filter", "glob filter id")))
+                    .add(new Option(null, "filter", "glob filter id, or NULL")))
             .add(new Command("list")
                     .summary("list collections"))
             .add(new Command("tree")
@@ -49,15 +49,28 @@ int main(string[] args)
             .parseArgs(args);
 
         parsed.on("add", (ProgramArgs args) {
-            import std.conv : to;
             auto filterIdOption = args.option("filter");
-            Nullable!long filterId = filterIdOption is null ? Nullable!long() :
-                Nullable!long(to!long(filterIdOption));
+            long filterId = 0;
+            UseGlobFilter useFilter = UseGlobFilter.defaultFilter;
+            if (filterIdOption !is null)
+            {
+                if (filterIdOption == "NULL")
+                    useFilter = UseGlobFilter.none;
+                else
+                {
+                    useFilter = UseGlobFilter.user;
+                    import std.conv : to;
+
+                    filterId = to!long(filterIdOption);
+                }
+            }
+
             result = collectionAdd(args.option("db"),
                 args.arg("name"),
                 args.arg("path"),
                 args.flag("verbose"),
                 !args.flag("yes"),
+                useFilter,
                 filterId);
         })
             .on("list", (args) {
@@ -71,9 +84,7 @@ int main(string[] args)
                 result = collectionRemove(args.option("db"),
                     args.arg("name"), !args.flag("yes"));
             })
-            .on("filters", (args) {
-                result = filtersDisplay(args.option("db"));
-            });
+            .on("filters", (args) { result = filtersDisplay(args.option("db")); });
     }
     catch (InvalidArgumentsException e)
     {

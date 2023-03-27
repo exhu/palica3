@@ -27,7 +27,7 @@ import palica.tui_helpers;
 import palica.dbhelpers;
 import palica.globfilter;
 
-public import std.typecons : Nullable;
+public import std.typecons : Nullable, nullable;
 import std.algorithm : map, filter;
 import std.array : array;
 import std.format : format;
@@ -44,7 +44,7 @@ private bool continueWithDupPath(DbReadLayer db, FsReadLayer fs, string path, bo
     return true;
 }
 
-enum UseFilter
+enum UseGlobFilter
 {
     defaultFilter,
     user,
@@ -52,16 +52,43 @@ enum UseFilter
 }
 
 int collectionAdd(string dbFilename, string name, string path, bool verbose,
-    bool ask, Nullable!long userFilterId, UseFilter filterToUse)
+    bool ask, UseGlobFilter filterToUse, long userFilterId)
 {
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
     auto settings = settingsMapFromDb(db.getSettings());
     auto defaultFilterId = getDefaultFilterId(settings);
-    const auto selectedFilterId = userFilterId.isNull ? defaultFilterId : userFilterId;
+    Nullable!DbId selectedFilterId;
 
-    // TODO check if filter exists
+    final switch (filterToUse)
+    {
+    case UseGlobFilter.defaultFilter:
+        selectedFilterId = defaultFilterId;
+        break;
+    case UseGlobFilter.user:
+        selectedFilterId = nullable(userFilterId);
+        break;
+    case UseGlobFilter.none:
+        selectedFilterId = Nullable!DbId();
+        break;
+    }
+
+    // check if filter exists
+    if (!selectedFilterId.isNull)
+    {
+        auto filters = db.getGlobFilters();
+        import std.algorithm : find;
+
+        auto found = find!(e => e.id ==
+                selectedFilterId.get())(filters);
+        if (found.length == 0)
+        {
+            displayError("No filter with id=%d found."
+                    .format(selectedFilterId.get()));
+            return 1;
+        }
+    }
 
     displayInfo(InfoAddingCollection(name, dbFilename, path, selectedFilterId));
 
