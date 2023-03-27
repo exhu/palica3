@@ -9,7 +9,7 @@ primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
-** save filter name for collection
+** implement sync
 ** use filter when populating/sync collection
 ** don't allow to delete patterns used in a filter
 ** don't allow to delete filters used by collections
@@ -40,6 +40,7 @@ via fs uuid (e.g. blkid)
 
 == DONE
 * collection
+** save filter name for collection
 ** replace writelns with error api
 ** not applicable: replace AutoDb with Unique/Scoped, move .close to destructor
 ** remove
