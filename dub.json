@@ -10,5 +10,11 @@
 	"description": "Media catalogue",
 	"license": "GPLv3+",
 	"name": "palica",
-        "stringImportPaths": ["sql"]
+        "stringImportPaths": ["sql"],
+        "buildTypes": {
+            "ldc-lto": {
+                "buildOptions": ["releaseMode"],
+                "dflags-ldc": ["-Oz", "-flto=thin"]
+            }
+        }
 }

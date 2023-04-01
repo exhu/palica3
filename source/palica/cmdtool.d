@@ -228,13 +228,17 @@ int collectionRemove(string dbFilename, string name, bool ask)
 
 int collectionSync(string dbFilename, string name, bool verbose, bool ask)
 {
+
     auto fs = new FsLayerImpl();
     auto adb = AutoDb(dbFilename);
     auto db = adb.db;
 
     auto found = findCol(dbFilename, db, name);
     if (found.isNull())
+    {
+        displayError("Collection '%s' not found.".format(name));
         return 1;
+    }
 
     auto path = found.get().fsPath;
     displayInfo("Syncing collection '%s' into '%s' from '%s':".format(name,
@@ -245,6 +249,8 @@ int collectionSync(string dbFilename, string name, bool verbose, bool ask)
         displayInfoSimilarCollectionPath();
         return 1;
     }
+
+    // TODO get filter, populate or update
 
     // TODO
 
