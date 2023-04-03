@@ -91,6 +91,7 @@ via fs uuid (e.g. blkid)
 
 === Version 2
 * Thumbnails
+* Perceptual hash https://en.wikipedia.org/wiki/Perceptual_hashing
 * Device id
 
 === Version N
