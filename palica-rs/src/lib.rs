@@ -1,4 +1,4 @@
 mod dblayer;
 
 
-pub const PALICA_VERSION: &str = "0.1";
+pub const PALICA_VERSION: &str = env!("CARGO_PKG_VERSION");
