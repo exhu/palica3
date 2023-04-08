@@ -1,5 +1,6 @@
 use sqlite;
 use std::fs::read_to_string;
+/*
 
 struct DbLayer<'a> {
     db: Box<sqlite::Connection>,
@@ -24,3 +25,4 @@ impl DbLayer<'_> {
 fn main() {
     println!("Hello, world!");
 }
+*/

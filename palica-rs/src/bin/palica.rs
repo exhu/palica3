@@ -1,19 +1,24 @@
 use clap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum Command {
+    #[default]
     Add,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Cli {
-    command: Command,
-    db_file_name: String,
+    pub command: Command,
+    pub db_file_name: String,
 }
+
 fn main() {
+    let mut parsed = Cli::default();
+
     let cmd = clap::Command::new("palica")
+        .version(::palica::PALICA_VERSION)
         .bin_name("palica")
-        .subcommand_required(true)
+        .arg(clap::Arg::new("database").long("db").required(true).help("database file").required(true))
         .subcommand(clap::Command::new("add"));
 
     let matches = cmd.get_matches();
