@@ -107,7 +107,7 @@ int collectionAdd(string dbFilename, string name, string path, bool verbose,
     }
 
     long entries = 1;
-    auto listener = new class CollectionListener
+    auto listener = new class CollBuilder.CollectionListener
     {
         override void onNewDirEntry(ref const DirEntry e)
         {

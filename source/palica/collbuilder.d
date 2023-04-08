@@ -23,30 +23,26 @@ import std.stdio : writeln;
 import palica.fsdb_helpers;
 import palica.globfilter;
 
-interface CollectionListener
-{
-    // just added to db
-    void onNewDirEntry(ref const DirEntry dir);
-
-    // updated db entry
-    //void onChangedDirEntry(ref const DirEntry dir);
-}
-
 /*
-   Two scenarios: 1) new collection is being populated,
+   Two scenarios: 1) new collection is being populated (this module),
    2) syncronizing existing collection
 */
 
 struct CollBuilder
 {
+    interface CollectionListener
+    {
+        // just added to db
+        void onNewDirEntry(ref const DirEntry dir);
+    }
+
     this(DbWriteLayer aDbWrite, FsReadLayer aFsRead)
     {
         dbWrite = aDbWrite;
         fsRead = aFsRead;
     }
 
-    Collection createCollection(string name, string path, Nullable!DbId
-            filterId, CollectionListener listener = null)
+    Collection createCollection(string name, string path, Nullable!DbId filterId, CollectionListener listener = null)
     {
         import palica.fsdb_helpers : dirEntryFromFsDirEntry;
 
@@ -62,7 +58,7 @@ struct CollBuilder
         auto dirEnt = dirEntryFromFsDirEntry(fsEntry);
         dirEnt.id = dbWrite.createDirEntry(dirEnt);
         auto col = dbWrite.createCollection(name, srcPath, dirEnt.id,
-                filterId);
+            filterId);
         if (listener)
             listener.onNewDirEntry(dirEnt);
         return col;
@@ -85,11 +81,11 @@ struct CollBuilder
         CollectionListener listener, ref const FsGlobFilter globFilter)
     {
         dbWrite.beginTransaction();
-        scope(exit)
+        scope (exit)
             dbWrite.commitTransaction();
 
         SubDir[] dirs = populateDirEntries(rootId, rootPath, listener,
-                globFilter);
+            globFilter);
         while (dirs.length > 0)
         {
             SubDir[] subDirs;
@@ -128,13 +124,6 @@ struct CollBuilder
         return result;
     }
 
-    /* will go to separate module
-    void syncCollection(const ref Collection col)
-    {
-        // TODO
-    }
-    */
-
 private:
     DbWriteLayer dbWrite;
     FsReadLayer fsRead;
@@ -158,7 +147,7 @@ unittest
     auto cb = CollBuilder(db, fs);
 
     size_t newDirEntries = 0;
-    auto listener = new class CollectionListener
+    auto listener = new class CollBuilder.CollectionListener
     {
         override void onNewDirEntry(ref const DirEntry dir)
         {
@@ -168,9 +157,8 @@ unittest
     };
 
     auto col = cb.createCollection("sample-col", "./sample-data",
-            Nullable!DbId(), listener);
+        Nullable!DbId(), listener);
     writeln("col=", col);
-
 
     auto fsFilter = FsGlobFilter();
     cb.populateDirEntriesInDepth(col.rootId, col.fsPath, listener, fsFilter);
@@ -178,6 +166,6 @@ unittest
     auto rootEntry = db.getDirEntryById(col.rootId);
     dumpDirEntry(rootEntry);
     dumpDirEntryAsTree(col.rootId, db, 1);
-    
+
     assert(newDirEntries >= 2);
 }
