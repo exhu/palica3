@@ -12,6 +12,7 @@ authors = ["Yury Benesh"]
 anyhow = "1.0.70"
 clap = { version = "4.0", features = ["derive"] }
 sqlite = "0.30.4"
+thiserror = "1.0.40"
 
 
 [profile.release]
