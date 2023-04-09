@@ -9,8 +9,10 @@ authors = ["Yury Benesh"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.70"
 clap = { version = "4.0", features = ["derive"] }
 sqlite = "0.30.4"
+
 
 [profile.release]
 lto = true
