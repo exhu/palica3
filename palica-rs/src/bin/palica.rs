@@ -1,5 +1,6 @@
 use clap::Parser;
-use palica::PALICA_VERSION;
+use std::process::ExitCode;
+use palica::cli;
 
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
@@ -48,7 +49,20 @@ struct RemoveCommand {
 struct FiltersCommand {
 }
 
-fn main() {
+fn main() -> ExitCode {
     let parsed = Command::parse();
-    println!("{:?}, palica version = {}", parsed, PALICA_VERSION);
+    println!("{:?}", parsed);
+    let ret = match parsed {
+        Command::Add(c) => cli::collection_add(cli::CollectionAdd {
+            db_file_name: c.db_file_name,
+            verbose: c.verbose.unwrap_or(false),
+            yes: c.yes.unwrap_or(false),
+            name: c.name,
+            path: c.path,
+            filter_id: c.filter_id,
+        }),
+        _ => ExitCode::FAILURE
+    };
+
+    ret
 }

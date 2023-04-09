@@ -1,6 +1,6 @@
+use anyhow::Result;
 use sqlite;
 use std::fs::read_to_string;
-use anyhow::Result;
 
 pub type DbId = i64;
 
@@ -67,7 +67,7 @@ mod read {
 }
 
 mod write {
-    use crate::dblayer::{Collection, DbId, DirEntry, DbResult};
+    use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
     pub struct DirStatements<'a> {
         create_dir: sqlite::Statement<'a>,
@@ -84,10 +84,7 @@ mod write {
     }
 
     /// entry.id is ignored.
-    pub fn create_dir_entry(
-        stmt: &mut sqlite::Statement,
-        entry: &DirEntry,
-    ) -> DbResult<DbId> {
+    pub fn create_dir_entry(stmt: &mut sqlite::Statement, entry: &DirEntry) -> DbResult<DbId> {
         todo!()
     }
 
@@ -100,22 +97,31 @@ mod write {
     }
 
     // optimization hints before performing many inserts
-    pub fn begin(conn: &sqlite::Connection) {}
+    pub fn begin(conn: &sqlite::Connection) -> DbResult<()> {
+        conn.execute("BEGIN;")?;
+        Ok(())
+    }
 
-    pub fn commit(conn: &sqlite::Connection) {}
+    pub fn commit(conn: &sqlite::Connection) -> DbResult<()> {
+        conn.execute("END;")?;
+        Ok(())
+    }
 
-    pub fn rollback(conn: &sqlite::Connection) {}
+    pub fn rollback(conn: &sqlite::Connection) -> DbResult<()> {
+        conn.execute("ROLLBACK;")?;
+        Ok(())
+    }
 
     pub fn open_and_make(fname: &str) -> DbResult<sqlite::Connection> {
-        use std::path::Path;
         use std::fs::read_to_string;
+        use std::path::Path;
 
-        let existing =  Path::new(fname).exists();
+        let existing = Path::new(fname).exists();
         let conn = sqlite::Connection::open(fname)?;
 
         if !existing {
             let schema = "sql/schema1.sql";
-            println!("reading schema {}", schema);
+            eprintln!("reading schema {}", schema);
             let sql = read_to_string(schema)?;
             conn.execute(sql)?;
         }
@@ -135,7 +141,6 @@ mod tests {
             Ok(_) => (),
             Err(_) => panic!("failed to create db"),
         }
-        
     }
 }
 
