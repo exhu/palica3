@@ -68,14 +68,16 @@ mod read {
 mod write {
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
-    pub struct DirStatements<'a> {
-        pub create_dir: sqlite::Statement<'a>,
-        pub map_dir: sqlite::Statement<'a>,
+    pub struct Db<'a> {
+        conn: &'a sqlite::Connection,
+        create_dir: sqlite::Statement<'a>,
+        map_dir: sqlite::Statement<'a>,
     }
 
-    impl DirStatements<'_> {
-        pub fn new<'a>(conn: &'a sqlite::Connection) -> DbResult<DirStatements<'a>> {
-            Ok(DirStatements {
+    impl Db<'_> {
+        pub fn new<'a>(conn: &'a sqlite::Connection) -> DbResult<Db<'a>> {
+            Ok(Db {
+                conn,
                 create_dir: conn.prepare(
                     "INSERT INTO dir_entries(id, fs_name,
                 fs_mod_time, last_sync_time, is_dir, fs_size)
@@ -88,78 +90,78 @@ mod write {
                 )?,
             })
         }
-    }
 
-    pub fn max_id(conn: &sqlite::Connection, table_name: &str) -> DbId {
-        for row in conn
-            .prepare(format!("SELECT MAX(id) from {};", table_name))
-            .unwrap()
-            .into_iter()
-            .map(|row| row.unwrap())
-        {
-            return row.try_read::<i64, _>(0).unwrap_or(0);
+        pub fn create_dir_entry(&mut self, entry: &DirEntry) -> DbResult<()> {
+            self.create_dir.bind_iter::<_, (_, sqlite::Value)>([
+                (":id", entry.id.into()),
+                (":fs_name", entry.fs_name.clone().into()),
+                (":fs_mod_time", entry.fs_mod_time.into()),
+                (":last_sync_time", entry.last_sync_time.into()),
+                (":is_dir", (entry.is_dir as i64).into()),
+                (":fs_size", entry.fs_size.into()),
+            ])?;
+
+            while let sqlite::State::Row = self.create_dir.next()? {}
+
+            self.create_dir.reset()?;
+
+            Ok(())
         }
-        -1
-    }
 
-    pub fn create_collection(
-        conn: &sqlite::Connection,
-        name: &str,
-        srcpath: &str,
-        rootid: DbId,
-    ) -> DbResult<Collection> {
-        todo!()
-    }
+        pub fn max_id(&self, table_name: &str) -> DbId {
+            for row in self
+                .conn
+                .prepare(format!("SELECT MAX(id) from {};", table_name))
+                .unwrap()
+                .into_iter()
+                .map(|row| row.unwrap())
+            {
+                return row.try_read::<i64, _>(0).unwrap_or(0);
+            }
+            -1
+        }
 
-    /// entry.id is requred, let new_id = max_id("dir_entries")+1;
-    pub fn create_dir_entry(stmt: &mut sqlite::Statement, entry: &DirEntry) -> DbResult<()> {
-        stmt.bind_iter::<_, (_, sqlite::Value)>([
-            (":id", entry.id.into()),
-            (":fs_name", entry.fs_name.clone().into()),
-            (":fs_mod_time", entry.fs_mod_time.into()),
-            (":last_sync_time", entry.last_sync_time.into()),
-            (":is_dir", (entry.is_dir as i64).into()),
-            (":fs_size", entry.fs_size.into()),
-        ])?;
+        pub fn create_collection(
+            &self,
+            name: &str,
+            srcpath: &str,
+            rootid: DbId,
+        ) -> DbResult<Collection> {
+            todo!()
+        }
 
-        while let sqlite::State::Row = stmt.next()? {}
+        pub fn map_dir_entry_to_parent_dir(
+            &mut self,
+            entry_id: DbId,
+            parent_id: DbId,
+        ) -> DbResult<()> {
+            self.map_dir.bind_iter::<_, (_, sqlite::Value)>([
+                (":entry_id", entry_id.into()),
+                (":directory_id", parent_id.into()),
+            ])?;
 
-        stmt.reset()?;
+            while let sqlite::State::Row = self.map_dir.next()? {}
 
-        Ok(())
-    }
+            self.map_dir.reset()?;
 
-    pub fn map_dir_entry_to_parent_dir(
-        stmt: &mut sqlite::Statement,
-        entry_id: DbId,
-        parent_id: DbId,
-    ) -> DbResult<()> {
-        stmt.bind_iter::<_, (_, sqlite::Value)>([
-            (":entry_id", entry_id.into()),
-            (":directory_id", parent_id.into()),
-        ])?;
+            Ok(())
+        }
 
-        while let sqlite::State::Row = stmt.next()? {}
+        // optimization hints before performing many inserts
+        pub fn begin(&self) -> DbResult<()> {
+            self.conn.execute("BEGIN;")?;
+            Ok(())
+        }
 
-        stmt.reset()?;
+        pub fn commit(&self) -> DbResult<()> {
+            self.conn.execute("END;")?;
+            Ok(())
+        }
 
-        Ok(())
-    }
-
-    // optimization hints before performing many inserts
-    pub fn begin(conn: &sqlite::Connection) -> DbResult<()> {
-        conn.execute("BEGIN;")?;
-        Ok(())
-    }
-
-    pub fn commit(conn: &sqlite::Connection) -> DbResult<()> {
-        conn.execute("END;")?;
-        Ok(())
-    }
-
-    pub fn rollback(conn: &sqlite::Connection) -> DbResult<()> {
-        conn.execute("ROLLBACK;")?;
-        Ok(())
+        pub fn rollback(&self) -> DbResult<()> {
+            self.conn.execute("ROLLBACK;")?;
+            Ok(())
+        }
     }
 
     pub fn open_and_make(fname: &str) -> DbResult<sqlite::Connection> {
@@ -207,26 +209,32 @@ mod tests {
     fn create_dir_and_map() {
         let conn = write::open_and_make(":memory:").unwrap();
 
-        let mut stmts = write::DirStatements::new(&conn).unwrap();
+        let mut db = write::Db::new(&conn).unwrap();
 
-        let new_id = write::max_id(&conn, "dir_entries")+1;
+        let new_id = db.max_id("dir_entries") + 1;
         assert_eq!(new_id, 1);
 
-        write::create_dir_entry(
-            &mut stmts.create_dir,
-            &DirEntry {
-                id: new_id,
-                fs_name: "mydir".to_owned(),
-                fs_mod_time: 1,
-                last_sync_time: 2,
-                is_dir: true,
-                fs_size: 0,
-            },
-        )
+        db.create_dir_entry(&DirEntry {
+            id: new_id,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        })
         .unwrap();
 
-        assert_eq!(write::max_id(&conn, "dir_entries"), 1);
+        assert_eq!(db.max_id("dir_entries"), 1);
 
+        db.create_dir_entry(&DirEntry {
+            id: new_id+1,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        })
+        .unwrap();
         // TODO get last row insert id
         //conn.last_ro
     }
