@@ -62,6 +62,11 @@ pub mod read {
     }
 
     pub fn normalized_abspath(p: &str) -> String {
-        todo!()
+        Path::new(p)
+            .canonicalize()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .into()
     }
 }

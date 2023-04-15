@@ -12,14 +12,13 @@ pub struct Collection {
     pub glob_filter_id: Option<DbId>,
 }
 
-// TODO
-pub type SysTime = u64;
+pub type DbTime = i64;
 
 pub struct DirEntry {
     pub id: DbId,
     pub fs_name: String,
-    pub fs_mod_time: SysTime,
-    pub last_sync_time: SysTime,
+    pub fs_mod_time: DbTime,
+    pub last_sync_time: DbTime,
     pub is_dir: bool,
     pub fs_size: i64,
 }
@@ -70,8 +69,37 @@ mod write {
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
     pub struct DirStatements<'a> {
-        create_dir: sqlite::Statement<'a>,
-        map_dir: sqlite::Statement<'a>,
+        pub create_dir: sqlite::Statement<'a>,
+        pub map_dir: sqlite::Statement<'a>,
+    }
+
+    impl DirStatements<'_> {
+        pub fn new<'a>(conn: &'a sqlite::Connection) -> DbResult<DirStatements<'a>> {
+            Ok(DirStatements {
+                create_dir: conn.prepare(
+                    "INSERT INTO dir_entries(id, fs_name,
+                fs_mod_time, last_sync_time, is_dir, fs_size)
+                VALUES(:id, :fs_name, :fs_mod_time, :last_sync_time,
+                       :is_dir, :fs_size)",
+                )?,
+                map_dir: conn.prepare(
+                    "INSERT INTO dir_to_sub(directory_id,
+                entry_id) VALUES(:directory_id, :entry_id)",
+                )?,
+            })
+        }
+    }
+
+    pub fn max_id(conn: &sqlite::Connection, table_name: &str) -> DbId {
+        for row in conn
+            .prepare(format!("SELECT MAX(id) from {};", table_name))
+            .unwrap()
+            .into_iter()
+            .map(|row| row.unwrap())
+        {
+            return row.try_read::<i64, _>(0).unwrap_or(0);
+        }
+        -1
     }
 
     pub fn create_collection(
@@ -83,17 +111,39 @@ mod write {
         todo!()
     }
 
-    /// entry.id is ignored.
-    pub fn create_dir_entry(stmt: &mut sqlite::Statement, entry: &DirEntry) -> DbResult<DbId> {
-        todo!()
+    /// entry.id is requred, let new_id = max_id("dir_entries")+1;
+    pub fn create_dir_entry(stmt: &mut sqlite::Statement, entry: &DirEntry) -> DbResult<()> {
+        stmt.bind_iter::<_, (_, sqlite::Value)>([
+            (":id", entry.id.into()),
+            (":fs_name", entry.fs_name.clone().into()),
+            (":fs_mod_time", entry.fs_mod_time.into()),
+            (":last_sync_time", entry.last_sync_time.into()),
+            (":is_dir", (entry.is_dir as i64).into()),
+            (":fs_size", entry.fs_size.into()),
+        ])?;
+
+        while let sqlite::State::Row = stmt.next()? {}
+
+        stmt.reset()?;
+
+        Ok(())
     }
 
     pub fn map_dir_entry_to_parent_dir(
         stmt: &mut sqlite::Statement,
         entry_id: DbId,
         parent_id: DbId,
-    ) -> DbResult<DbId> {
-        todo!()
+    ) -> DbResult<()> {
+        stmt.bind_iter::<_, (_, sqlite::Value)>([
+            (":entry_id", entry_id.into()),
+            (":directory_id", parent_id.into()),
+        ])?;
+
+        while let sqlite::State::Row = stmt.next()? {}
+
+        stmt.reset()?;
+
+        Ok(())
     }
 
     // optimization hints before performing many inserts
@@ -123,7 +173,18 @@ mod write {
             let schema = "sql/schema1.sql";
             eprintln!("reading schema {}", schema);
             let sql = read_to_string(schema)?;
-            conn.execute(sql)?;
+            //begin(&conn)?;
+            eprintln!("started tx");
+            match conn.execute(sql) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("failed tx {:?}", e);
+                    //rollback(&conn)?;
+                    return Err(e.into());
+                }
+            }
+            eprintln!("commiting tx");
+            //commit(&conn)?;
         }
 
         Ok(conn)
@@ -132,113 +193,41 @@ mod write {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
     fn open_and_make() {
-        use crate::dblayer::write;
-
         let r = write::open_and_make(":memory:");
         match r {
             Ok(_) => (),
             Err(_) => panic!("failed to create db"),
         }
     }
-}
 
-/*
-interface DbReadLayer
-{
-    Collection[] enumCollections();
-    DirEntry getDirEntryById(DbId id);
-    DirEntry[] getDirEntriesOfParent(DbId id);
-    Nullable!Collection getCollectionByName(string name);
-    Collection[] getCollectionsWithSamePath(string path);
+    #[test]
+    fn create_dir_and_map() {
+        let conn = write::open_and_make(":memory:").unwrap();
 
-    GlobPattern[] getGlobPatterns();
-    GlobFilter[] getGlobFilters();
-    // returns sorted by position
-    GlobFilterToPattern[] getFilterPatterns(DbId filterId);
-    SettingValue[] getSettings();
-}
+        let mut stmts = write::DirStatements::new(&conn).unwrap();
 
-// On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly
-// given a value, then it will be filled automatically with an unused integer,
-// usually one more than the largest ROWID currently in use. This is true
-// regardless of whether or not the AUTOINCREMENT keyword is used.
-// https://www.sqlite.org/autoinc.html
+        let new_id = write::max_id(&conn, "dir_entries")+1;
+        assert_eq!(new_id, 1);
 
-interface DbWriteLayer
-{
-    // errors
-    final class CollectionAlreadyExists : Exception
-    {
-        this(string name, DbId dbId)
-        {
-            import std.string : format;
+        write::create_dir_entry(
+            &mut stmts.create_dir,
+            &DirEntry {
+                id: new_id,
+                fs_name: "mydir".to_owned(),
+                fs_mod_time: 1,
+                last_sync_time: 2,
+                is_dir: true,
+                fs_size: 0,
+            },
+        )
+        .unwrap();
 
-            super(format("Collection '%s' with id '%d' already exists.", name, dbId));
-        }
-    }
+        assert_eq!(write::max_id(&conn, "dir_entries"), 1);
 
-    /// Throws CollectionAlreadyExists, DbError
-    Collection createCollection(string name, string srcPath, DbId rootId, Nullable!DbId);
-    /// Throws DbError
-    /// entry.id is ignored.
-    DbId createDirEntry(ref const DirEntry entry);
-
-    DbId mapDirEntryToParentDir(DbId entryId, DbId parentId);
-
-    // optimization hints before performing many inserts
-    void beginTransaction();
-    void commitTransaction();
-    void rollbackTransaction();
-
-    // deletes entry and all dependent items (if it's dir, then subdirs)
-    // dir_to_sub, tag_to_dir_entry, mime_to_dir_entry
-    void deleteDirEntry(DbId id, bool newTransaction = true);
-
-    void deleteCollection(Collection col);
-}
-
-pub trait DbLayer {
-
-}
-*/
-
-/*
-struct DbLayer<'a> {
-    db: Box<RefCell<sqlite::Connection>>,
-    prepared: Option<Prepared<'a>>,
-}
-
-struct Prepared<'conn> {
-    create_dir_entry:  sqlite::Statement<'conn>,
-}
-
-impl Prepared <'_> {
-    pub fn new<'a>(db: &'a sqlite::Connection) -> Prepared<'a> {
-        Prepared {
-            create_dir_entry: db.prepare("INSERT INTO dir_entries(fs_name,
-            fs_mod_time, last_sync_time) VALUES(:fs_name, :fs_mod_time, :last_sync_time);").unwrap(),
-        }
-    }
-
-}
-
-impl DbLayer<'_> {
-    pub fn new(filename: &str) -> DbLayer {
-        let db = Box::new(RefCell::new(sqlite::open(filename).expect("Failed to open db")));
-        let sql = read_to_string("schema1.sql").unwrap();
-        db.borrow().execute(sql).unwrap();
-
-        DbLayer {
-            db,
-            prepared: None
-        }
-
-    }
-
-    pub fn prep (&mut self) {
-        self.prepared = Some(Prepared::new(&self.db.borrow()));
+        // TODO get last row insert id
+        //conn.last_ro
     }
 }
-*/
