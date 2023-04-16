@@ -1,7 +1,3 @@
-use anyhow::Result;
-use sqlite;
-use std::fs::read_to_string;
-
 pub type DbId = i64;
 
 pub struct Collection {
@@ -59,14 +55,66 @@ pub enum DbError {
 pub type DbResult<T> = anyhow::Result<T>;
 
 mod read {
-    use crate::dblayer::{Collection, DbResult};
-    pub fn enum_collections(conn: &sqlite::Connection) -> DbResult<Vec<Collection>> {
-        todo!()
+    use super::{Collection, DbResult};
+    use thiserror::Error;
+
+    #[derive(Error, Debug)]
+    pub enum DbError {
+        #[error("db file does not exist")]
+        NoDbFile,
     }
+
+    pub fn open_existing(fname: &str) -> DbResult<sqlite::Connection> {
+        use std::path::Path;
+
+        let existing = Path::new(fname).exists();
+
+        if !existing {
+            return Err(DbError::NoDbFile.into());
+        }
+
+        let conn = sqlite::Connection::open(fname)?;
+        // TODO check version, tables etc.
+
+        Ok(conn)
+    }
+
+    pub struct Db<'a> {
+        conn: &'a sqlite::Connection,
+        list_dir: sqlite::Statement<'a>,
+    }
+
+    impl Db<'_> {
+        pub fn new<'a>(conn: &'a sqlite::Connection) -> DbResult<Db<'a>> {
+            Ok(Db {
+                conn,
+                list_dir: conn.prepare(
+                    "SELECT id, fs_name,
+                fs_mod_time, last_sync_time, is_dir, fs_size FROM dir_entries",
+                )?,
+            })
+        }
+
+        pub fn enum_collections(&self) -> DbResult<Vec<Collection>> {
+            todo!()
+        }
+    }
+}
+
+pub fn nullable_from_option<T>(o: Option<T>) -> sqlite::Value
+where
+    sqlite::Value: From<T>,
+{
+    let r: sqlite::Value = match o {
+        Some(v) => v.into(),
+        None => sqlite::Value::Null,
+    };
+    r
 }
 
 mod write {
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
+    use super::*;
 
     pub struct Db<'a> {
         conn: &'a sqlite::Connection,
@@ -123,11 +171,35 @@ mod write {
 
         pub fn create_collection(
             &self,
-            name: &str,
-            srcpath: &str,
-            rootid: DbId,
+            coll_name: &str,
+            fs_path: &str,
+            root_id: DbId,
+            glob_filter_id: Option<DbId>,
         ) -> DbResult<Collection> {
-            todo!()
+            let new_id = self.max_id("collections") + 1;
+            let mut stmt = self.conn.prepare(
+                "INSERT INTO collections(id, coll_name, fs_path, root_id, glob_filter_id)
+                VALUES(:id, :coll_name, :fs_path, :root_id, :glob_filter_id)",
+            )?;
+
+            let glob_filter: sqlite::Value = nullable_from_option(glob_filter_id);
+
+            stmt.bind_iter::<_, (_, sqlite::Value)>([
+                (":id", new_id.into()),
+                (":coll_name", coll_name.to_owned().into()),
+                (":fs_path", fs_path.to_owned().into()),
+                (":root_id", root_id.into()),
+                (":glob_filter_id", glob_filter),
+            ])?;
+
+            while let sqlite::State::Row = stmt.next()? {}
+            Ok(Collection {
+                id: new_id,
+                coll_name: coll_name.to_string(),
+                fs_path: fs_path.to_string(),
+                root_id,
+                glob_filter_id,
+            })
         }
 
         pub fn map_dir_entry_to_parent_dir(
@@ -168,7 +240,11 @@ mod write {
         use std::fs::read_to_string;
         use std::path::Path;
 
-        let existing = Path::new(fname).exists();
+        let existing = if fname == ":memory:" {
+            false
+        } else {
+            Path::new(fname).exists()
+        };
         let conn = sqlite::Connection::open(fname)?;
 
         if !existing {
@@ -211,11 +287,13 @@ mod tests {
 
         let mut db = write::Db::new(&conn).unwrap();
 
-        let new_id = db.max_id("dir_entries") + 1;
-        assert_eq!(new_id, 1);
+        let max_id = db.max_id("dir_entries");
+        assert_eq!(max_id, 0);
+
+        let mydir_id = max_id + 1;
 
         db.create_dir_entry(&DirEntry {
-            id: new_id,
+            id: mydir_id,
             fs_name: "mydir".to_owned(),
             fs_mod_time: 1,
             last_sync_time: 2,
@@ -226,16 +304,29 @@ mod tests {
 
         assert_eq!(db.max_id("dir_entries"), 1);
 
+        let myfile_id = mydir_id + 1;
+
         db.create_dir_entry(&DirEntry {
-            id: new_id+1,
-            fs_name: "mydir".to_owned(),
+            id: myfile_id,
+            fs_name: "myfile".to_owned(),
             fs_mod_time: 1,
             last_sync_time: 2,
-            is_dir: true,
-            fs_size: 0,
+            is_dir: false,
+            fs_size: 7,
         })
         .unwrap();
-        // TODO get last row insert id
-        //conn.last_ro
+
+        db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
+    }
+
+    #[test]
+    fn create_collection() {
+        let conn = write::open_and_make(":memory:").unwrap();
+
+        let db = write::Db::new(&conn).unwrap();
+        let col = db.create_collection("myname", "mypath", 1, Option::None).unwrap();
+        assert_eq!(col.id, 1);
+        let col2 = db.create_collection("myname2", "mypath", 1, Some(33)).unwrap();
+        assert_eq!(col2.id, 2);
     }
 }
