@@ -62,8 +62,16 @@ mod read {
     pub enum DbError {
         #[error("db file does not exist")]
         NoDbFile,
+        #[error("db file schema is not compatible")]
+        WrongDbSchema,
     }
 
+    pub fn check_database_validity(conn: &sqlite::Connection) -> bool {
+        // TODO check version, tables etc.
+        true
+    }
+
+    /// Either open an existing database, or fail.
     pub fn open_existing(fname: &str) -> DbResult<sqlite::Connection> {
         use std::path::Path;
 
@@ -74,7 +82,9 @@ mod read {
         }
 
         let conn = sqlite::Connection::open(fname)?;
-        // TODO check version, tables etc.
+        if !check_database_validity(&conn) {
+            return Err(DbError::WrongDbSchema.into());
+        }
 
         Ok(conn)
     }
@@ -112,9 +122,13 @@ where
     r
 }
 
+pub fn value_from_bool(b: bool) -> sqlite::Value {
+    (b as i64).into()
+}
+
 mod write {
-    use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
     use super::*;
+    use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
     pub struct Db<'a> {
         conn: &'a sqlite::Connection,
@@ -145,7 +159,7 @@ mod write {
                 (":fs_name", entry.fs_name.clone().into()),
                 (":fs_mod_time", entry.fs_mod_time.into()),
                 (":last_sync_time", entry.last_sync_time.into()),
-                (":is_dir", (entry.is_dir as i64).into()),
+                (":is_dir", value_from_bool(entry.is_dir)),
                 (":fs_size", entry.fs_size.into()),
             ])?;
 
@@ -159,7 +173,7 @@ mod write {
         pub fn max_id(&self, table_name: &str) -> DbId {
             for row in self
                 .conn
-                .prepare(format!("SELECT MAX(id) from {};", table_name))
+                .prepare(format!("SELECT MAX(id) FROM {};", table_name))
                 .unwrap()
                 .into_iter()
                 .map(|row| row.unwrap())
@@ -236,7 +250,9 @@ mod write {
         }
     }
 
+    /// Either open an existing, or initialize a new database.
     pub fn open_and_make(fname: &str) -> DbResult<sqlite::Connection> {
+        use super::read::{check_database_validity, DbError};
         use std::fs::read_to_string;
         use std::path::Path;
 
@@ -263,6 +279,10 @@ mod write {
             }
             eprintln!("commiting tx");
             //commit(&conn)?;
+        } else {
+            if !check_database_validity(&conn) {
+                return Err(DbError::WrongDbSchema.into());
+            }
         }
 
         Ok(conn)
@@ -324,9 +344,27 @@ mod tests {
         let conn = write::open_and_make(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
-        let col = db.create_collection("myname", "mypath", 1, Option::None).unwrap();
+        let col = db
+            .create_collection("myname", "mypath", 1, Option::None)
+            .unwrap();
         assert_eq!(col.id, 1);
-        let col2 = db.create_collection("myname2", "mypath", 1, Some(33)).unwrap();
+        let col2 = db
+            .create_collection("myname2", "mypath", 1, Some(33))
+            .unwrap();
         assert_eq!(col2.id, 2);
+    }
+
+    #[test]
+    fn open_existing() {
+        use std::path::Path;
+        use std::fs::remove_file;
+        let temp_filename = "tmp-dblayer-open-existing.db";
+        if Path::new(&temp_filename).exists() {
+            remove_file(temp_filename).unwrap();
+        }
+
+        write::open_and_make(&temp_filename).unwrap();
+        read::open_existing(&temp_filename).unwrap();
+        remove_file(temp_filename).unwrap();
     }
 }
