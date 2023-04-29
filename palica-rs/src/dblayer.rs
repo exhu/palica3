@@ -1,5 +1,6 @@
 pub type DbId = i64;
 
+#[derive(Debug)]
 pub struct Collection {
     pub id: DbId,
     pub coll_name: String,
@@ -109,7 +110,7 @@ mod read {
             let mut res: Vec<Collection> = Vec::new();
             let prep = self.conn.prepare(
                 "SELECT id, coll_name, fs_path,
-                root_id, glob_filter_id FROM collections",
+                root_id, glob_filter_id FROM collections ORDER BY coll_name",
             )?;
             for row in prep.into_iter().map(|row| row.unwrap()) {
                 let c = Collection {
@@ -381,5 +382,25 @@ mod tests {
         write::open_and_make(&temp_filename).unwrap();
         read::open_existing(&temp_filename).unwrap();
         remove_file(temp_filename).unwrap();
+    }
+
+    #[test]
+    fn enum_collections() {
+        let conn = write::open_and_make(":memory:").unwrap();
+
+        let db = write::Db::new(&conn).unwrap();
+        let _col = db
+            .create_collection("myname", "mypath", 1, Option::None)
+            .unwrap();
+        let _col2 = db
+            .create_collection("myname2", "mypath", 1, Some(33))
+            .unwrap();
+
+        let dbread = read::Db::new(&conn).unwrap();
+        let cols = dbread.enum_collections().unwrap();
+        assert_eq!(cols.len(), 2);
+        assert_eq!(cols[0].coll_name, "myname");
+        assert_eq!(cols[1].coll_name, "myname2");
+        eprintln!("{:?}", cols);
     }
 }
