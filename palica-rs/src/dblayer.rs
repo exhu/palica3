@@ -106,7 +106,22 @@ mod read {
         }
 
         pub fn enum_collections(&self) -> DbResult<Vec<Collection>> {
-            todo!()
+            let mut res: Vec<Collection> = Vec::new();
+            let prep = self.conn.prepare(
+                "SELECT id, coll_name, fs_path,
+                root_id, glob_filter_id FROM collections",
+            )?;
+            for row in prep.into_iter().map(|row| row.unwrap()) {
+                let c = Collection {
+                    id: row.read::<i64, usize>(0),
+                    coll_name: row.read::<&str, usize>(1).to_string(),
+                    fs_path: row.read::<&str, usize>(2).to_string(),
+                    root_id: row.read::<i64, usize>(3),
+                    glob_filter_id: row.read::<Option<i64>, usize>(4),
+                };
+                res.push(c);
+            }
+            Ok(res)
         }
     }
 }
@@ -356,8 +371,8 @@ mod tests {
 
     #[test]
     fn open_existing() {
-        use std::path::Path;
         use std::fs::remove_file;
+        use std::path::Path;
         let temp_filename = "tmp-dblayer-open-existing.db";
         if Path::new(&temp_filename).exists() {
             remove_file(temp_filename).unwrap();
