@@ -48,7 +48,7 @@ INSERT INTO glob_patterns(id, regexp) VALUES(23, '(?i)\.mpe?g$');
 -- no extension
 INSERT INTO glob_patterns(id, regexp) VALUES(24, '(/|^)[^./]+[.]?$');
 -- anything
-INSERT INTO glob_patterns(id, regexp) VALUES(25, '^.*$');
+INSERT INTO glob_patterns(id, regexp) VALUES(25, '^.+$');
 COMMIT TRANSACTION;
 
 BEGIN TRANSACTION;
@@ -65,7 +65,10 @@ CREATE TABLE glob_filter_to_pattern(id INTEGER PRIMARY KEY,
     glob_filter_id INTEGER NOT NULL, glob_pattern_id INTEGER NOT NULL,
     include INTEGER NOT NULL,
     position INTEGER NOT NULL);
--- fill in default exclude list
+-- include all files
+INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
+    position) VALUES(1, 25, 1, 9);
+-- but exclude the following
 INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,
     position) VALUES(1, 1, 0, 10);
 INSERT INTO glob_filter_to_pattern(glob_filter_id, glob_pattern_id, include,

@@ -34,16 +34,37 @@ impl DirEntry {
     }
 }
 
+#[derive(Debug)]
 pub struct GlobPattern {
     pub id: DbId,
     pub regexp: String,
 }
 
+impl GlobPattern {
+    pub fn from_row(row: &sqlite::Row) -> GlobPattern {
+        GlobPattern {
+            id: row.read::<i64, usize>(0),
+            regexp: row.read::<&str, usize>(1).to_owned(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct GlobFilter {
     pub id: DbId,
     pub name: String,
 }
 
+impl GlobFilter {
+    pub fn from_row(row: &sqlite::Row) -> GlobFilter {
+        GlobFilter {
+            id: row.read::<i64, usize>(0),
+            name: row.read::<&str, usize>(1).to_owned(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct GlobFilterToPattern {
     pub id: DbId,
     pub filter_id: DbId,
@@ -52,6 +73,19 @@ pub struct GlobFilterToPattern {
     pub position: i32,
 }
 
+impl GlobFilterToPattern {
+    pub fn from_row(row: &sqlite::Row) -> GlobFilterToPattern {
+        GlobFilterToPattern {
+            id: row.read::<i64, usize>(0),
+            filter_id: row.read::<i64, usize>(1),
+            glob_pattern_id: row.read::<i64, usize>(2),
+            include: row.read::<i64, usize>(3) != 0,
+            position: row.read::<i64, usize>(4) as i32,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct SettingValue {
     pub id: DbId,
     pub key: String,
@@ -70,7 +104,7 @@ pub enum DbError {
 pub type DbResult<T> = anyhow::Result<T>;
 
 mod read {
-    use super::{Collection, DbId, DbResult, DirEntry};
+    use super::*;
     use thiserror::Error;
 
     #[derive(Error, Debug)]
@@ -151,6 +185,43 @@ mod read {
                 .map(|r| DirEntry::from_row(&r))
                 .collect();
             self.list_dir.reset()?;
+            Ok(res)
+        }
+
+        pub fn enum_glob_filters(&self) -> DbResult<Vec<GlobFilter>> {
+            let res = self
+                .conn
+                .prepare("SELECT id, name FROM glob_filters ORDER BY name")?
+                .iter()
+                .map(|r| r.unwrap())
+                .map(|r| GlobFilter::from_row(&r))
+                .collect();
+            Ok(res)
+        }
+
+        pub fn enum_glob_patterns(&self) -> DbResult<Vec<GlobPattern>> {
+            let res = self
+                .conn
+                .prepare("SELECT id, regexp FROM glob_patterns ORDER BY regexp")?
+                .iter()
+                .map(|r| r.unwrap())
+                .map(|r| GlobPattern::from_row(&r))
+                .collect();
+            Ok(res)
+        }
+
+        /// returns sorted by position
+        pub fn filter_patterns(&self, filter_id: DbId) -> DbResult<Vec<GlobFilterToPattern>> {
+            let mut stmt = self.conn.prepare(
+                "SELECT id, filter_id, glob_pattern_id, include,
+                    position FROM glob_filter_to_pattern WHERE filter_id = ?1 ORDER BY position",
+            )?;
+            stmt.bind((1, filter_id))?;
+            let res = stmt
+                .iter()
+                .map(|r| r.unwrap())
+                .map(|r| GlobFilterToPattern::from_row(&r))
+                .collect();
             Ok(res)
         }
     }
@@ -491,7 +562,8 @@ mod tests {
         .unwrap();
 
         db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
-        db.map_dir_entry_to_parent_dir(myfile_id2, mydir_id).unwrap();
+        db.map_dir_entry_to_parent_dir(myfile_id2, mydir_id)
+            .unwrap();
         db.map_dir_entry_to_parent_dir(mydir_id2, mydir_id).unwrap();
 
         let mut dbread = read::Db::new(&conn).unwrap();
