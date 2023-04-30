@@ -11,6 +11,7 @@ pub struct Collection {
 
 pub type DbTime = i64;
 
+#[derive(Debug)]
 pub struct DirEntry {
     pub id: DbId,
     pub fs_name: String,
@@ -18,6 +19,19 @@ pub struct DirEntry {
     pub last_sync_time: DbTime,
     pub is_dir: bool,
     pub fs_size: i64,
+}
+
+impl DirEntry {
+    pub fn from_row(row: &sqlite::Row) -> DirEntry {
+        DirEntry {
+            id: row.read::<i64, usize>(0),
+            fs_name: row.read::<&str, usize>(1).to_owned(),
+            fs_mod_time: row.read::<i64, usize>(2).to_owned(),
+            last_sync_time: row.read::<i64, usize>(3).to_owned(),
+            is_dir: row.read::<i64, usize>(4) != 0,
+            fs_size: row.read::<i64, usize>(5),
+        }
+    }
 }
 
 pub struct GlobPattern {
@@ -56,7 +70,7 @@ pub enum DbError {
 pub type DbResult<T> = anyhow::Result<T>;
 
 mod read {
-    use super::{Collection, DbResult};
+    use super::{Collection, DbId, DbResult, DirEntry};
     use thiserror::Error;
 
     #[derive(Error, Debug)]
@@ -100,8 +114,10 @@ mod read {
             Ok(Db {
                 conn,
                 list_dir: conn.prepare(
-                    "SELECT id, fs_name,
-                fs_mod_time, last_sync_time, is_dir, fs_size FROM dir_entries",
+                    "SELECT e.id, e.fs_name, e.fs_mod_time,
+                    e.last_sync_time, e.is_dir, e.fs_size FROM dir_entries e
+                    JOIN dir_to_sub d ON d.entry_id = e.id
+                    WHERE d.directory_id = ?1 ORDER BY e.fs_name, e.is_dir DESC",
                 )?,
             })
         }
@@ -122,6 +138,19 @@ mod read {
                 };
                 res.push(c);
             }
+            Ok(res)
+        }
+
+        // TODO return iterator?
+        pub fn enum_dir_entries(&mut self, parent_id: DbId) -> DbResult<Vec<DirEntry>> {
+            self.list_dir.bind((1, parent_id))?;
+            let res = self
+                .list_dir
+                .iter()
+                .map(|r| r.unwrap())
+                .map(|r| DirEntry::from_row(&r))
+                .collect();
+            self.list_dir.reset()?;
             Ok(res)
         }
     }
@@ -402,5 +431,76 @@ mod tests {
         assert_eq!(cols[0].coll_name, "myname");
         assert_eq!(cols[1].coll_name, "myname2");
         eprintln!("{:?}", cols);
+    }
+
+    #[test]
+    fn enum_dir() {
+        let conn = write::open_and_make(":memory:").unwrap();
+
+        let mut db = write::Db::new(&conn).unwrap();
+
+        let max_id = db.max_id("dir_entries");
+        assert_eq!(max_id, 0);
+
+        let mydir_id = max_id + 1;
+
+        db.create_dir_entry(&DirEntry {
+            id: mydir_id,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        })
+        .unwrap();
+
+        assert_eq!(db.max_id("dir_entries"), 1);
+
+        let myfile_id = mydir_id + 1;
+
+        db.create_dir_entry(&DirEntry {
+            id: myfile_id,
+            fs_name: "fileA".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 7,
+        })
+        .unwrap();
+
+        let myfile_id2 = myfile_id + 1;
+        db.create_dir_entry(&DirEntry {
+            id: myfile_id2,
+            fs_name: "fileB".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 7,
+        })
+        .unwrap();
+
+        let mydir_id2 = myfile_id2 + 1;
+        db.create_dir_entry(&DirEntry {
+            id: mydir_id2,
+            fs_name: "Zsubdir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        })
+        .unwrap();
+
+        db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
+        db.map_dir_entry_to_parent_dir(myfile_id2, mydir_id).unwrap();
+        db.map_dir_entry_to_parent_dir(mydir_id2, mydir_id).unwrap();
+
+        let mut dbread = read::Db::new(&conn).unwrap();
+        let files = dbread.enum_dir_entries(mydir_id).unwrap();
+        assert_eq!(files.len(), 3);
+        assert_eq!(files[0].fs_name, "Zsubdir");
+        assert_eq!(files[1].fs_name, "fileA");
+        assert_eq!(files[2].fs_name, "fileB");
+
+        eprintln!("{:?}", files);
     }
 }
