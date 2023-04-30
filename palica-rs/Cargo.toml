@@ -11,6 +11,7 @@ authors = ["Yury Benesh"]
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.0", features = ["derive"] }
+pcre = "0.2.3"
 sqlite = "0.30.4"
 thiserror = "1.0.40"
 

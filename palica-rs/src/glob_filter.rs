@@ -1,14 +1,17 @@
-pub struct Pattern {}
+pub struct Pattern {
+    compiled: pcre::Pcre,
+}
 
 impl Pattern {
     pub fn new(text: &str) -> Pattern {
-        // TODO
-        Pattern {}
+        Pattern {
+            compiled: pcre::Pcre::compile(text)
+                .expect(&format!("Failed to compile regexp: {}", text)),
+        }
     }
 
-    pub fn accept(&self, text: &str) -> bool {
-        // TODO
-        false
+    pub fn accept(&mut self, text: &str) -> bool {
+        self.compiled.exec(text).is_some()
     }
 }
 
@@ -18,7 +21,7 @@ pub struct FilterItem {
 }
 
 impl FilterItem {
-    pub fn include(&self, text: &str, patterns: &[Pattern]) -> bool {
+    pub fn include(&self, text: &str, patterns: &mut [Pattern]) -> bool {
         let accepted = patterns[self.pattern_index].accept(text);
         accepted == self.include
     }
@@ -30,9 +33,35 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub fn include(&self, text: &str) -> bool {
+    /// true if the text must be included (allowed by the filter)
+    pub fn include(&mut self, text: &str) -> bool {
         self.items
             .iter()
-            .fold(false, |_, i| i.include(text, &self.patterns))
+            .fold(false, |_, i| i.include(text, &mut self.patterns))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn filter() {
+        let mut f = Filter {
+            patterns: vec![Pattern::new(r"^.+$"), Pattern::new(r"/\.thumbnails$")],
+            items: vec![
+                FilterItem {
+                    pattern_index: 0,
+                    include: true,
+                },
+                FilterItem {
+                    pattern_index: 1,
+                    include: false,
+                },
+            ],
+        };
+
+        assert_eq!(f.include("abc"), true);
+        assert_eq!(f.include("/abc/def/.thumbnails/jkk"), true);
+        assert_eq!(f.include("/abc/def/.thumbnails"), false);
     }
 }
