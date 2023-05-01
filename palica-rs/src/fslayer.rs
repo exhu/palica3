@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+#[derive(Debug)]
 pub struct FsDirEntry {
     pub name: String,
     pub size: u64,
@@ -34,8 +35,17 @@ pub mod read {
     type FsResult<T> = anyhow::Result<T>;
 
     /// not recursive
-    pub fn dir_entries(p: &str) -> Vec<FsDirEntry> {
-        todo!()
+    pub fn dir_entries(path: &Path) -> FsResult<Vec<FsDirEntry>> {
+        let mut res = Vec::new();
+        for e in std::fs::read_dir(path)? {
+            let entry = e?;
+            let path = entry.path();
+            match dir_entry(&path) {
+                Ok(e) => res.push(e),
+                Err(_) => eprintln!("Skipped '{}'.", path.to_str().unwrap()),
+            }
+        }
+        Ok(res)
     }
 
     #[derive(thiserror::Error, Debug)]
@@ -44,8 +54,7 @@ pub mod read {
         NotAfileOrDir,
     }
 
-    pub fn dir_entry(p: &str) -> FsResult<FsDirEntry> {
-        let path = Path::new(p);
+    pub fn dir_entry(path: &Path) -> FsResult<FsDirEntry> {
         let fname = path.file_name().unwrap().to_str().unwrap().into();
         let modtime = path.metadata().unwrap().modified()?;
         if path.is_dir() {
@@ -68,5 +77,24 @@ pub mod read {
             .to_str()
             .unwrap()
             .into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn dir_entry() {
+        let e = read::dir_entry(std::path::Path::new("../README.adoc")).unwrap();
+        assert_eq!(e.name, "README.adoc");
+    }
+
+    #[test]
+    fn dir_entries() {
+        let e = read::dir_entries(std::path::Path::new("../sample-data")).unwrap();
+        assert!(e.len() > 3);
+        assert_eq!(e.iter().any(|i| i.name == "img1.jxl"), true);
+        assert_eq!(e.iter().any(|i| i.name == "img1.jpg"), true);
+        assert_eq!(e.iter().any(|i| i.name == "img1.webp"), true);
     }
 }
