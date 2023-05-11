@@ -10,6 +10,7 @@ pub struct CollectionAdd {
 }
 
 pub fn collection_add(args: CollectionAdd) -> ExitCode {
+    
 
 
     ExitCode::SUCCESS
