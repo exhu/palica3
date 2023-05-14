@@ -20,13 +20,49 @@ pub const DEFAULT_FILTER_ID: DbId = 1;
 
 pub type DbId = i64;
 
+pub struct Transaction<'a> {
+    conn: &'a sqlite::Connection,
+    finished: bool,
+}
+
+impl Transaction<'_> {
+    pub fn new<'a>(conn: &'a sqlite::Connection) -> Transaction<'a> {
+        conn.execute("BEGIN").expect("Failed to begin tx.");
+        Transaction { conn, finished: false }
+    }
+
+    pub fn commit(&mut self) {
+        self.conn.execute("END").expect("Failed to commit tx.");
+        self.finished = true;
+    }
+
+    pub fn rollback(&mut self) {
+        self.conn.execute("ROLLBACK").expect("Failed to rollback tx.");
+        self.finished = true;
+    }
+}
+
+impl Drop for Transaction<'_> {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.rollback();
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Collection {
     pub id: DbId,
     pub coll_name: String,
     pub fs_path: String,
     pub root_id: DbId,
-    pub glob_filter_id: Option<DbId>,
+    pub glob_filter_id: DbId,
+}
+
+impl Collection {
+    pub fn table_name() -> &'static str {
+        "collections"
+    }
 }
 
 pub type DbTime = i64;
@@ -51,6 +87,10 @@ impl DirEntry {
             is_dir: row.read::<i64, usize>(4) != 0,
             fs_size: row.read::<i64, usize>(5),
         }
+    }
+
+    pub fn table_name() -> &'static str {
+        "dir_entries"
     }
 }
 
@@ -123,7 +163,7 @@ pub enum DbError {
 //pub type DbResult<T> = Result<T, DbError>;
 pub type DbResult<T> = anyhow::Result<T>;
 
-mod read {
+pub mod read {
     use super::*;
     use thiserror::Error;
 
@@ -188,7 +228,7 @@ mod read {
                     coll_name: row.read::<&str, usize>(1).to_string(),
                     fs_path: row.read::<&str, usize>(2).to_string(),
                     root_id: row.read::<i64, usize>(3),
-                    glob_filter_id: row.read::<Option<i64>, usize>(4),
+                    glob_filter_id: row.read::<i64, usize>(4),
                 };
                 res.push(c);
             }
@@ -262,12 +302,12 @@ pub fn value_from_bool(b: bool) -> sqlite::Value {
     (b as i64).into()
 }
 
-mod write {
+pub mod write {
     use super::*;
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
     pub struct Db<'a> {
-        conn: &'a sqlite::Connection,
+        pub conn: &'a sqlite::Connection,
         create_dir: sqlite::Statement<'a>,
         map_dir: sqlite::Statement<'a>,
     }
@@ -324,22 +364,21 @@ mod write {
             coll_name: &str,
             fs_path: &str,
             root_id: DbId,
-            glob_filter_id: Option<DbId>,
+            glob_filter_id: DbId,
         ) -> DbResult<Collection> {
-            let new_id = self.max_id("collections") + 1;
+            let new_id = self.max_id(Collection::table_name()) + 1;
             let mut stmt = self.conn.prepare(
                 "INSERT INTO collections(id, coll_name, fs_path, root_id, glob_filter_id)
                 VALUES(:id, :coll_name, :fs_path, :root_id, :glob_filter_id)",
             )?;
 
-            let glob_filter: sqlite::Value = nullable_from_option(glob_filter_id);
 
             stmt.bind_iter::<_, (_, sqlite::Value)>([
                 (":id", new_id.into()),
                 (":coll_name", coll_name.to_owned().into()),
                 (":fs_path", fs_path.to_owned().into()),
                 (":root_id", root_id.into()),
-                (":glob_filter_id", glob_filter),
+                (":glob_filter_id", glob_filter_id.clone().into()),
             ])?;
 
             while let sqlite::State::Row = stmt.next()? {}
@@ -370,6 +409,8 @@ mod write {
         }
 
         // optimization hints before performing many inserts
+        // use Transaction instead.
+        /*
         pub fn begin(&self) -> DbResult<()> {
             self.conn.execute("BEGIN;")?;
             Ok(())
@@ -384,6 +425,7 @@ mod write {
             self.conn.execute("ROLLBACK;")?;
             Ok(())
         }
+        */
     }
 
     /// Either open an existing, or initialize a new database.
@@ -443,7 +485,7 @@ mod tests {
 
         let mut db = write::Db::new(&conn).unwrap();
 
-        let max_id = db.max_id("dir_entries");
+        let max_id = db.max_id(DirEntry::table_name());
         assert_eq!(max_id, 0);
 
         let mydir_id = max_id + 1;
@@ -458,7 +500,7 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(db.max_id("dir_entries"), 1);
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
 
         let myfile_id = mydir_id + 1;
 
@@ -530,7 +572,7 @@ mod tests {
 
         let mut db = write::Db::new(&conn).unwrap();
 
-        let max_id = db.max_id("dir_entries");
+        let max_id = db.max_id(DirEntry::table_name());
         assert_eq!(max_id, 0);
 
         let mydir_id = max_id + 1;
@@ -545,7 +587,7 @@ mod tests {
         })
         .unwrap();
 
-        assert_eq!(db.max_id("dir_entries"), 1);
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
 
         let myfile_id = mydir_id + 1;
 

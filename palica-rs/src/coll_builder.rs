@@ -15,14 +15,46 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::dblayer::{DbId, DirEntry, Collection};
+use crate::dblayer;
+use crate::dblayer::{Collection, DbId, DirEntry};
+use crate::fsdbtime::dbtime_from_sys;
 use crate::fslayer;
 
 pub type CollResult<T> = anyhow::Result<T>;
 pub type OnNewDirEntry = dyn Fn(&DirEntry);
 
-pub fn new_collection(name: &str, src_path: &std::path::Path, filter_id: DbId,
-                  on_new_direntry: &OnNewDirEntry) -> CollResult<Collection> {
+pub fn new_collection(
+    write_db: &mut dblayer::write::Db,
+    name: &str,
+    src_path: &std::path::Path,
+    filter_id: DbId,
+    on_new_direntry: &OnNewDirEntry,
+) -> CollResult<Collection> {
     let root_fs_entry = fslayer::read::dir_entry(src_path)?;
+    let mut tx = dblayer::Transaction::new(&write_db.conn);
+    // TODO now
+    let sync_time = 0;
+
+    // TODO refactor to func
+    let root_entry = dblayer::DirEntry {
+        id: write_db.max_id(DirEntry::table_name()),
+        fs_name: root_fs_entry.name,
+        fs_mod_time: dbtime_from_sys(root_fs_entry.mod_time),
+        last_sync_time: sync_time,
+        is_dir: root_fs_entry.is_dir,
+        fs_size: root_fs_entry.size as i64,
+    };
+    write_db.create_dir_entry(&root_entry)?;
+    let col = write_db.create_collection(
+        name,
+        src_path.file_name().unwrap().to_str().unwrap().into(),
+        root_entry.id,
+        filter_id,
+    );
+
+    // TODO scan dir
+
+    tx.commit();
+
     todo!()
 }
