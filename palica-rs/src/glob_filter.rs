@@ -56,9 +56,9 @@ pub struct Filter {
 impl Filter {
     /// true if the text must be included (allowed by the filter)
     pub fn include(&mut self, text: &str) -> bool {
-        self.items
-            .iter()
-            .fold(false, |prev, i| i.include(text, &mut self.patterns).unwrap_or(prev))
+        self.items.iter().fold(false, |prev, i| {
+            i.include(text, &mut self.patterns).unwrap_or(prev)
+        })
     }
 }
 
@@ -89,8 +89,11 @@ mod tests {
     #[test]
     fn filter2() {
         let mut f = Filter {
-            patterns: vec![Pattern::new(r"^.+$"), Pattern::new(r"/\.thumbnails$"),
-                Pattern::new(r"/\.png$")],
+            patterns: vec![
+                Pattern::new(r"^.+$"),
+                Pattern::new(r"/\.thumbnails$"),
+                Pattern::new(r"/\.png$"),
+            ],
             items: vec![
                 FilterItem {
                     pattern_index: 0,

@@ -18,6 +18,7 @@
 use clap::Parser;
 use std::process::ExitCode;
 use palica::cli;
+use palica::dblayer;
 
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
@@ -46,8 +47,8 @@ struct AddCommand {
     pub name: String,
     #[arg(help = "Path to a directory.")]
     pub path: String,
-    #[arg(help = "Glob filter id or NULL.")]
-    pub filter_id: Option<String>,
+    #[arg(help = "Glob filter id.")]
+    pub filter_id: Option<i64>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -76,7 +77,7 @@ fn main() -> ExitCode {
             yes: c.yes.unwrap_or(false),
             name: c.name,
             path: c.path,
-            filter_id: c.filter_id,
+            filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
         }),
         _ => ExitCode::FAILURE
     };

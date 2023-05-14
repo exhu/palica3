@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+use crate::dblayer::DbId;
 use std::process::ExitCode;
 
 pub struct CollectionAdd {
@@ -23,12 +24,9 @@ pub struct CollectionAdd {
     pub yes: bool,
     pub name: String,
     pub path: String,
-    pub filter_id: Option<String>,
+    pub filter_id: DbId,
 }
 
 pub fn collection_add(args: CollectionAdd) -> ExitCode {
-    
-
-
     ExitCode::SUCCESS
 }
