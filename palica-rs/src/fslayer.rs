@@ -73,6 +73,8 @@ pub mod read {
         Ok(res)
     }
 
+    // TODO fs::read_dir -> filter path -> map to dir_entry -> collect?
+
     #[derive(thiserror::Error, Debug)]
     enum FsError {
         #[error("not a file or dir")]
