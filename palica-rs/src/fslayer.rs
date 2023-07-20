@@ -50,16 +50,24 @@ pub mod read {
     use std::path::Path;
 
     type FsResult<T> = anyhow::Result<T>;
+    /// return true to include the path
+    type FilterFn = dyn Fn(&Path) -> bool;
 
     /// not recursive
-    pub fn dir_entries(path: &Path) -> FsResult<Vec<FsDirEntry>> {
+    pub fn dir_entries(path: &Path, filterFn: Option<&FilterFn>) -> FsResult<Vec<FsDirEntry>> {
         let mut res = Vec::new();
         for e in std::fs::read_dir(path)? {
             let entry = e?;
             let path = entry.path();
-            match dir_entry(&path) {
-                Ok(e) => res.push(e),
-                Err(_) => eprintln!("Skipped '{}'.", path.to_str().unwrap()),
+            let allow = match filterFn {
+                Some(f) => f(&path),
+                None => true,
+            };
+            if allow {
+                match dir_entry(&path) {
+                    Ok(e) => res.push(e),
+                    Err(_) => eprintln!("Skipped '{}'.", path.to_str().unwrap()),
+                }
             }
         }
         Ok(res)
@@ -108,7 +116,7 @@ mod tests {
 
     #[test]
     fn dir_entries() {
-        let e = read::dir_entries(std::path::Path::new("../sample-data")).unwrap();
+        let e = read::dir_entries(std::path::Path::new("../sample-data"), None).unwrap();
         assert!(e.len() > 3);
         assert_eq!(e.iter().any(|i| i.name == "img1.jxl"), true);
         assert_eq!(e.iter().any(|i| i.name == "img1.jpg"), true);
