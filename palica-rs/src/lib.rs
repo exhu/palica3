@@ -15,13 +15,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-pub mod dblayer;
 pub mod cli;
+pub mod coll_builder;
+pub mod dblayer;
 pub mod fsdbtime;
 pub mod fslayer;
 pub mod glob_filter;
-pub mod coll_builder;
-
 
 pub const PALICA_VERSION: &str = env!("CARGO_PKG_VERSION");
-

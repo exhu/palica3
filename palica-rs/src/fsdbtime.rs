@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_time() {
         assert_eq!(systime_from_db(0), UNIX_EPOCH);
-        let sec:u64 = 1_000_000_000;
+        let sec: u64 = 1_000_000_000;
         let minute = sec * 60;
         let hour = minute * 60;
         let day = 24 * hour;

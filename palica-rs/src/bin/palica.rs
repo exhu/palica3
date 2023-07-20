@@ -16,25 +16,24 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 use clap::Parser;
-use std::process::ExitCode;
 use palica::cli;
 use palica::dblayer;
+use std::process::ExitCode;
 
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
 enum Command {
-    #[command(about="Add a new collection.")]
+    #[command(about = "Add a new collection.")]
     Add(AddCommand),
-    #[command(about="List collections.")]
+    #[command(about = "List collections.")]
     List(ListCommand),
-    #[command(about="List collection files.")]
+    #[command(about = "List collection files.")]
     Tree(TreeCommand),
-    #[command(about="Remove collection.")]
+    #[command(about = "Remove collection.")]
     Remove(RemoveCommand),
-    #[command(about="Display file path (glob) filters.")]
+    #[command(about = "Display file path (glob) filters.")]
     Filters(FiltersCommand),
 }
-
 
 #[derive(clap::Args, Debug)]
 struct AddCommand {
@@ -52,20 +51,16 @@ struct AddCommand {
 }
 
 #[derive(clap::Args, Debug)]
-struct ListCommand {
-}
+struct ListCommand {}
 
 #[derive(clap::Args, Debug)]
-struct TreeCommand {
-}
+struct TreeCommand {}
 
 #[derive(clap::Args, Debug)]
-struct RemoveCommand {
-}
+struct RemoveCommand {}
 
 #[derive(clap::Args, Debug)]
-struct FiltersCommand {
-}
+struct FiltersCommand {}
 
 fn main() -> ExitCode {
     let parsed = Command::parse();
@@ -79,7 +74,7 @@ fn main() -> ExitCode {
             path: c.path,
             filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
         }),
-        _ => ExitCode::FAILURE
+        _ => ExitCode::FAILURE,
     };
 
     ret
