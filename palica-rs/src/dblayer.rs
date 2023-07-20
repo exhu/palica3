@@ -28,7 +28,10 @@ pub struct Transaction<'a> {
 impl Transaction<'_> {
     pub fn new<'a>(conn: &'a sqlite::Connection) -> Transaction<'a> {
         conn.execute("BEGIN").expect("Failed to begin tx.");
-        Transaction { conn, finished: false }
+        Transaction {
+            conn,
+            finished: false,
+        }
     }
 
     pub fn commit(&mut self) {
@@ -37,7 +40,9 @@ impl Transaction<'_> {
     }
 
     pub fn rollback(&mut self) {
-        self.conn.execute("ROLLBACK").expect("Failed to rollback tx.");
+        self.conn
+            .execute("ROLLBACK")
+            .expect("Failed to rollback tx.");
         self.finished = true;
     }
 }
@@ -302,6 +307,7 @@ pub fn value_from_bool(b: bool) -> sqlite::Value {
     (b as i64).into()
 }
 
+/// For optimization hints before performing many inserts use Transaction.
 pub mod write {
     use super::*;
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
@@ -372,7 +378,6 @@ pub mod write {
                 VALUES(:id, :coll_name, :fs_path, :root_id, :glob_filter_id)",
             )?;
 
-
             stmt.bind_iter::<_, (_, sqlite::Value)>([
                 (":id", new_id.into()),
                 (":coll_name", coll_name.to_owned().into()),
@@ -407,25 +412,6 @@ pub mod write {
 
             Ok(())
         }
-
-        // optimization hints before performing many inserts
-        // use Transaction instead.
-        /*
-        pub fn begin(&self) -> DbResult<()> {
-            self.conn.execute("BEGIN;")?;
-            Ok(())
-        }
-
-        pub fn commit(&self) -> DbResult<()> {
-            self.conn.execute("END;")?;
-            Ok(())
-        }
-
-        pub fn rollback(&self) -> DbResult<()> {
-            self.conn.execute("ROLLBACK;")?;
-            Ok(())
-        }
-        */
     }
 
     /// Either open an existing, or initialize a new database.
