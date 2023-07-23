@@ -75,21 +75,25 @@ pub mod read {
     }
     */
 
-    // TODO fs::read_dir -> filter path -> map to dir_entry -> collect?
+    // fs::read_dir -> filter path -> map to dir_entry -> collect?
     pub fn dir_entries<'a>(
         path: &Path,
         filter_fn: Option<&'a FilterFn>,
     ) -> FsResult<Box<dyn Iterator<Item = FsDirEntry> + 'a>> {
         let res = std::fs::read_dir(path)?
-            .filter(|result| result.is_ok())
-            .map(|result| result.unwrap())
+            .filter_map(|result| match result {
+                Ok(entry) => Some(entry),
+                _ => None,
+            })
             .filter(move |item| match filter_fn {
                 Some(f) => f(&item.path()),
                 None => true,
             })
             .map(|item| dir_entry(&item.path()))
-            .filter(|result| result.is_ok())
-            .map(|result| result.unwrap());
+            .filter_map(|result| match result {
+                Ok(entry) => Some(entry),
+                _ => None,
+            });
         Ok(Box::new(res))
     }
 
