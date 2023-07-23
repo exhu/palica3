@@ -47,19 +47,20 @@ impl FsDirEntry {
 
 pub mod read {
     use super::FsDirEntry;
-    use std::path::Path;
+    use std::{fs::DirEntry, path::Path};
 
     type FsResult<T> = anyhow::Result<T>;
     /// return true to include the path
     type FilterFn = dyn Fn(&Path) -> bool;
 
     /// not recursive
-    pub fn dir_entries(path: &Path, filterFn: Option<&FilterFn>) -> FsResult<Vec<FsDirEntry>> {
+    /*
+    pub fn dir_entries(path: &Path, filter_fn: Option<&FilterFn>) -> FsResult<Vec<FsDirEntry>> {
         let mut res = Vec::new();
         for e in std::fs::read_dir(path)? {
             let entry = e?;
             let path = entry.path();
-            let allow = match filterFn {
+            let allow = match filter_fn {
                 Some(f) => f(&path),
                 None => true,
             };
@@ -72,8 +73,25 @@ pub mod read {
         }
         Ok(res)
     }
+    */
 
     // TODO fs::read_dir -> filter path -> map to dir_entry -> collect?
+    pub fn dir_entries<'a>(
+        path: &Path,
+        filter_fn: Option<&'a FilterFn>,
+    ) -> FsResult<Box<dyn Iterator<Item = FsDirEntry> + 'a>> {
+        let res = std::fs::read_dir(path)?
+            .filter(|result| result.is_ok())
+            .map(|result| result.unwrap())
+            .filter(move |item| match filter_fn {
+                Some(f) => f(&item.path()),
+                None => true,
+            })
+            .map(|item| dir_entry(&item.path()))
+            .filter(|result| result.is_ok())
+            .map(|result| result.unwrap());
+        Ok(Box::new(res))
+    }
 
     #[derive(thiserror::Error, Debug)]
     enum FsError {
