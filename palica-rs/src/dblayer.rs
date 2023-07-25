@@ -508,13 +508,9 @@ mod tests {
         let conn = write::open_and_make(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
-        let col = db
-            .create_collection("myname", "mypath", 1, Option::None)
-            .unwrap();
+        let col = db.create_collection("myname", "mypath", 1, 1).unwrap();
         assert_eq!(col.id, 1);
-        let col2 = db
-            .create_collection("myname2", "mypath", 1, Some(33))
-            .unwrap();
+        let col2 = db.create_collection("myname2", "mypath", 1, 33).unwrap();
         assert_eq!(col2.id, 2);
     }
 
@@ -537,12 +533,8 @@ mod tests {
         let conn = write::open_and_make(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
-        let _col = db
-            .create_collection("myname", "mypath", 1, Option::None)
-            .unwrap();
-        let _col2 = db
-            .create_collection("myname2", "mypath", 1, Some(33))
-            .unwrap();
+        let _col = db.create_collection("myname", "mypath", 1, 1).unwrap();
+        let _col2 = db.create_collection("myname2", "mypath", 1, 33).unwrap();
 
         let dbread = read::Db::new(&conn).unwrap();
         let cols = dbread.enum_collections().unwrap();

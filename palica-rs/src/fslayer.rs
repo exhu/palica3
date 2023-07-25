@@ -47,7 +47,7 @@ impl FsDirEntry {
 
 pub mod read {
     use super::FsDirEntry;
-    use std::{fs::DirEntry, path::Path};
+    use std::path::Path;
 
     type FsResult<T> = anyhow::Result<T>;
     /// return true to include the path
@@ -77,19 +77,29 @@ pub mod read {
 
     // fs::read_dir -> filter path -> map to dir_entry -> collect?
     pub fn dir_entries<'a>(
-        path: &Path,
+        path: &'a Path,
         filter_fn: Option<&'a FilterFn>,
     ) -> FsResult<Box<dyn Iterator<Item = FsDirEntry> + 'a>> {
+        let path_str = path.to_string_lossy();
         let res = std::fs::read_dir(path)?
-            .filter_map(|result| match result {
+            .filter_map(move |result| match result {
                 Ok(entry) => Some(entry),
-                _ => None,
+                _ => {
+                    eprintln!("read_dir failed for {}", path_str);
+                    None
+                }
             })
             .filter(move |item| match filter_fn {
                 Some(f) => f(&item.path()),
                 None => true,
             })
-            .map(|item| dir_entry(&item.path()))
+            .map(|item| {
+                let r = dir_entry(&item.path());
+                if r.is_err() {
+                    eprintln!("dir_entry failed for {}", item.path().to_string_lossy());
+                }
+                r
+            })
             .filter_map(|result| match result {
                 Ok(entry) => Some(entry),
                 _ => None,
@@ -138,12 +148,33 @@ mod tests {
         assert_eq!(e.name, "README.adoc");
     }
 
+    #[cfg(none)]
     #[test]
-    fn dir_entries() {
+    fn dir_entries_old() {
         let e = read::dir_entries(std::path::Path::new("../sample-data"), None).unwrap();
         assert!(e.len() > 3);
         assert_eq!(e.iter().any(|i| i.name == "img1.jxl"), true);
         assert_eq!(e.iter().any(|i| i.name == "img1.jpg"), true);
         assert_eq!(e.iter().any(|i| i.name == "img1.webp"), true);
+    }
+
+    #[test]
+    fn dir_entries() {
+        let items = read::dir_entries(std::path::Path::new("../sample-data"), None).unwrap();
+        let mut count = 0;
+        let known = ["img1.jxl", "img1.jpg", "img1.webp"];
+        let mut found = Vec::<String>::new();
+        for item in items {
+            found.push(item.name);
+            count += 1;
+        }
+        assert!(count > 3);
+        println!("{:?}", &found);
+        for k in known {
+            assert!(found.iter().any(|i| {
+                println!("{:?} == {:?}, {:?}", i, k, i == k);
+                i == k
+            }));
+        }
     }
 }
