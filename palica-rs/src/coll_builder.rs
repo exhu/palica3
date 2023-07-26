@@ -15,11 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-use crate::dblayer;
 use crate::dblayer::{Collection, DbId, DirEntry};
 use crate::fsdbtime::dbtime_from_sys;
 use crate::fslayer::{read, FsDirEntry};
+use crate::{dblayer, fslayer};
 
+use std::collections::VecDeque;
 use std::time::SystemTime;
 
 pub type CollResult<T> = anyhow::Result<T>;
@@ -50,20 +51,33 @@ pub fn new_collection(
     let mut id_gen =
         dblayer::write::IdGen::new_with_last_id(write_db.max_id(DirEntry::table_name()));
     let new_id = id_gen.gen_id();
-    let root_entry = new_entry_from_fs(&root_fs_entry, new_id, sync_time);
+    let root_entry: DirEntry = new_entry_from_fs(&root_fs_entry, new_id, sync_time);
     write_db.create_dir_entry(&root_entry)?;
     let col = write_db.create_collection(
         name,
         src_path.file_name().unwrap().to_str().unwrap().into(),
         root_entry.id,
         filter_id,
-    );
+    )?;
     on_new_direntry(&root_entry);
 
+    let mut subdirs = VecDeque::<std::path::PathBuf>::new();
+    subdirs.push_back(src_path.to_owned());
+
+    // TODO get filter
+
+    while let Some(root_path) = subdirs.pop_front() {
+        if let Ok(entries) = fslayer::read::dir_entries(&root_path, None) {
+            for item in entries {
+                // TODO
+            }
+        }
+    }
     // TODO scan dir, build a collection of subdirs to scan next
     // TOOD scan subdirs, repeat until list of subdirs is empty
+    //src_path.join(path)
 
     tx.commit();
 
-    Ok(col?)
+    Ok(col)
 }
