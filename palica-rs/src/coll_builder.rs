@@ -47,7 +47,9 @@ pub fn new_collection(
     let mut tx = dblayer::Transaction::new(&write_db.conn);
     let sync_time = std::time::SystemTime::now();
 
-    let new_id = write_db.max_id(DirEntry::table_name()) + 1;
+    let mut id_gen =
+        dblayer::write::IdGen::new_with_last_id(write_db.max_id(DirEntry::table_name()));
+    let new_id = id_gen.gen_id();
     let root_entry = new_entry_from_fs(&root_fs_entry, new_id, sync_time);
     write_db.create_dir_entry(&root_entry)?;
     let col = write_db.create_collection(
@@ -58,7 +60,8 @@ pub fn new_collection(
     );
     on_new_direntry(&root_entry);
 
-    // TODO scan dir
+    // TODO scan dir, build a collection of subdirs to scan next
+    // TOOD scan subdirs, repeat until list of subdirs is empty
 
     tx.commit();
 

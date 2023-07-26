@@ -312,6 +312,25 @@ pub mod write {
     use super::*;
     use crate::dblayer::{Collection, DbId, DbResult, DirEntry};
 
+    pub struct IdGen {
+        next_id: DbId,
+    }
+
+    impl IdGen {
+        /// pass last id, e.g. result of select max(id) from my_sql_table;
+        pub fn new_with_last_id(last_id: DbId) -> IdGen {
+            IdGen {
+                next_id: last_id + 1,
+            }
+        }
+
+        pub fn gen_id(&mut self) -> DbId {
+            let result = self.next_id;
+            self.next_id += 1;
+            result
+        }
+    }
+
     pub struct Db<'a> {
         pub conn: &'a sqlite::Connection,
         create_dir: sqlite::Statement<'a>,
@@ -614,5 +633,12 @@ mod tests {
         assert_eq!(files[2].fs_name, "fileB");
 
         eprintln!("{:?}", files);
+    }
+
+    #[test]
+    fn id_gen_test() {
+        let mut gen = write::IdGen::new_with_last_id(0);
+        assert_eq!(gen.gen_id(), 1);
+        assert_eq!(gen.gen_id(), 2);
     }
 }
