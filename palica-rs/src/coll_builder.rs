@@ -21,6 +21,7 @@ use crate::fslayer::{read, FsDirEntry};
 use crate::{dblayer, fslayer};
 
 use std::collections::VecDeque;
+use std::str::FromStr;
 use std::time::SystemTime;
 
 pub type CollResult<T> = anyhow::Result<T>;
@@ -44,7 +45,8 @@ pub fn new_collection(
     filter_id: DbId,
     on_new_direntry: &OnNewDirEntry,
 ) -> CollResult<Collection> {
-    let root_fs_entry = read::dir_entry(src_path)?;
+    let src_path = src_path.canonicalize()?;
+    let root_fs_entry = read::dir_entry(&src_path)?;
     let mut tx = dblayer::Transaction::new(&write_db.conn);
     let sync_time = std::time::SystemTime::now();
 
@@ -61,6 +63,7 @@ pub fn new_collection(
     )?;
     on_new_direntry(&root_entry);
 
+    // TODO subdirs -> parent_id, Path
     let mut subdirs = VecDeque::<std::path::PathBuf>::new();
     subdirs.push_back(src_path.to_owned());
 
@@ -69,15 +72,35 @@ pub fn new_collection(
     while let Some(root_path) = subdirs.pop_front() {
         if let Ok(entries) = fslayer::read::dir_entries(&root_path, None) {
             for item in entries {
-                // TODO
+                let db_item = new_entry_from_fs(&item, id_gen.gen_id(), sync_time);
+                eprintln!("db_item = {:?}", &db_item);
+                write_db.create_dir_entry(&db_item)?;
+                // TODO map to parent dir entry
+                on_new_direntry(&db_item);
+                if item.is_dir {
+                    let p = root_path.join(item.name);
+                    subdirs.push_back(p);
+                }
             }
         }
     }
-    // TODO scan dir, build a collection of subdirs to scan next
-    // TOOD scan subdirs, repeat until list of subdirs is empty
-    //src_path.join(path)
 
     tx.commit();
-
     Ok(col)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dblayer::write;
+    #[test]
+    fn new_col() {
+        let conn = write::open_and_make("test-col.sqlite3").unwrap();
+        let mut db = write::Db::new(&conn).unwrap();
+        let col = new_collection(&mut db, "testcol", &std::path::Path::new("./"), 1, &|e| {
+            eprintln!("new entry {:?}", &e);
+        });
+        eprintln!("{:?}", col);
+        assert!(col.is_ok());
+    }
 }

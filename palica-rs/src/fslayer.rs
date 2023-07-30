@@ -114,6 +114,7 @@ pub mod read {
     }
 
     pub fn dir_entry(path: &Path) -> FsResult<FsDirEntry> {
+        eprintln!("{:?}", path);
         let fname = path.file_name().unwrap().to_str().unwrap().into();
         let modtime = path.metadata().unwrap().modified()?;
         if path.is_dir() {
