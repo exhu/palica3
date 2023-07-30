@@ -63,23 +63,23 @@ pub fn new_collection(
     )?;
     on_new_direntry(&root_entry);
 
-    // TODO subdirs -> parent_id, Path
-    let mut subdirs = VecDeque::<std::path::PathBuf>::new();
-    subdirs.push_back(src_path.to_owned());
+    // subdirs -> parent_id, Path
+    let mut subdirs = VecDeque::<(DbId, std::path::PathBuf)>::new();
+    subdirs.push_back((root_entry.id, src_path.to_owned()));
 
     // TODO get filter
 
-    while let Some(root_path) = subdirs.pop_front() {
+    while let Some((root_id, root_path)) = subdirs.pop_front() {
         if let Ok(entries) = fslayer::read::dir_entries(&root_path, None) {
             for item in entries {
                 let db_item = new_entry_from_fs(&item, id_gen.gen_id(), sync_time);
                 eprintln!("db_item = {:?}", &db_item);
                 write_db.create_dir_entry(&db_item)?;
-                // TODO map to parent dir entry
+                write_db.map_dir_entry_to_parent_dir(db_item.id, root_id)?;
                 on_new_direntry(&db_item);
                 if item.is_dir {
                     let p = root_path.join(item.name);
-                    subdirs.push_back(p);
+                    subdirs.push_back((db_item.id, p));
                 }
             }
         }
@@ -95,7 +95,7 @@ mod tests {
     use dblayer::write;
     #[test]
     fn new_col() {
-        let conn = write::open_and_make("test-col.sqlite3").unwrap();
+        let conn = write::open_and_make(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
         let col = new_collection(&mut db, "testcol", &std::path::Path::new("./"), 1, &|e| {
             eprintln!("new entry {:?}", &e);
