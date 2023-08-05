@@ -5,7 +5,7 @@
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -170,6 +170,7 @@ pub type DbResult<T> = anyhow::Result<T>;
 
 pub mod read {
     use super::*;
+    use crate::glob_filter::Filter;
     use thiserror::Error;
 
     #[derive(Error, Debug)]
@@ -288,6 +289,16 @@ pub mod read {
                 .map(|r| GlobFilterToPattern::from_row(&r))
                 .collect();
             Ok(res)
+        }
+
+        pub fn glob_filter_by_id(&self, filter_id: DbId) -> DbResult<Filter> {
+            let dbpatterns = self.enum_glob_patterns()?;
+            let dbfilter_patterns = self.filter_patterns(filter_id)?;
+
+            // TODO put used patterns from dbpatterns
+            // TODO construct FilterItems
+
+            todo!()
         }
     }
 }
