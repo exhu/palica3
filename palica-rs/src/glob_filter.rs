@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#[derive(Debug)]
 pub struct Pattern {
     compiled: pcre::Pcre,
 }
@@ -32,6 +33,7 @@ impl Pattern {
     }
 }
 
+#[derive(Debug)]
 pub struct FilterItem {
     pub pattern_index: usize,
     pub include: bool,
@@ -48,6 +50,7 @@ impl FilterItem {
     }
 }
 
+#[derive(Debug)]
 pub struct Filter {
     pub patterns: Vec<Pattern>,
     pub items: Vec<FilterItem>,
@@ -84,6 +87,7 @@ mod tests {
         assert_eq!(f.include("abc"), true);
         assert_eq!(f.include("/abc/def/.thumbnails/jkk"), true);
         assert_eq!(f.include("/abc/def/.thumbnails"), false);
+        assert_eq!(f.include(".thumbnails/jkk"), true);
     }
 
     #[test]

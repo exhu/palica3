@@ -22,11 +22,11 @@ COMMIT TRANSACTION;
 -- during populating the collection, or automatically tagging the files.
 BEGIN TRANSACTION;
 CREATE TABLE glob_patterns(id INTEGER PRIMARY KEY, regexp TEXT NOT NULL);
-INSERT INTO glob_patterns(id, regexp) VALUES(1, '/\.git$');
-INSERT INTO glob_patterns(id, regexp) VALUES(2, '/\.hg$');
-INSERT INTO glob_patterns(id, regexp) VALUES(3, '/\.svn$');
-INSERT INTO glob_patterns(id, regexp) VALUES(4, '/\.thumbnails$');
-INSERT INTO glob_patterns(id, regexp) VALUES(5, '/\.DS_Store$');
+INSERT INTO glob_patterns(id, regexp) VALUES(1, '/\.git');
+INSERT INTO glob_patterns(id, regexp) VALUES(2, '/\.hg');
+INSERT INTO glob_patterns(id, regexp) VALUES(3, '/\.svn');
+INSERT INTO glob_patterns(id, regexp) VALUES(4, '/\.thumbnails');
+INSERT INTO glob_patterns(id, regexp) VALUES(5, '/\.DS_Store');
 INSERT INTO glob_patterns(id, regexp) VALUES(6, '(?i)/Thumbs.db$');
 INSERT INTO glob_patterns(id, regexp) VALUES(7, '(?i)\.jpe?g$');
 INSERT INTO glob_patterns(id, regexp) VALUES(8, '(?i)\.orf$');

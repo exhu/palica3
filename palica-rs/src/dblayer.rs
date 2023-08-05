@@ -132,7 +132,7 @@ impl GlobFilter {
 #[derive(Debug)]
 pub struct GlobFilterToPattern {
     pub id: DbId,
-    pub filter_id: DbId,
+    pub glob_filter_id: DbId,
     pub glob_pattern_id: DbId,
     pub include: bool,
     pub position: i32,
@@ -142,7 +142,7 @@ impl GlobFilterToPattern {
     pub fn from_row(row: &sqlite::Row) -> GlobFilterToPattern {
         GlobFilterToPattern {
             id: row.read::<i64, usize>(0),
-            filter_id: row.read::<i64, usize>(1),
+            glob_filter_id: row.read::<i64, usize>(1),
             glob_pattern_id: row.read::<i64, usize>(2),
             include: row.read::<i64, usize>(3) != 0,
             position: row.read::<i64, usize>(4) as i32,
@@ -169,8 +169,10 @@ pub enum DbError {
 pub type DbResult<T> = anyhow::Result<T>;
 
 pub mod read {
+    use std::collections::HashMap;
+
     use super::*;
-    use crate::glob_filter::Filter;
+    use crate::glob_filter::{Filter, FilterItem, Pattern};
     use thiserror::Error;
 
     #[derive(Error, Debug)]
@@ -279,8 +281,8 @@ pub mod read {
         /// returns sorted by position
         pub fn filter_patterns(&self, filter_id: DbId) -> DbResult<Vec<GlobFilterToPattern>> {
             let mut stmt = self.conn.prepare(
-                "SELECT id, filter_id, glob_pattern_id, include,
-                    position FROM glob_filter_to_pattern WHERE filter_id = ?1 ORDER BY position",
+                "SELECT id, glob_filter_id, glob_pattern_id, include,
+                    position FROM glob_filter_to_pattern WHERE glob_filter_id = ?1 ORDER BY position",
             )?;
             stmt.bind((1, filter_id))?;
             let res = stmt
@@ -295,10 +297,41 @@ pub mod read {
             let dbpatterns = self.enum_glob_patterns()?;
             let dbfilter_patterns = self.filter_patterns(filter_id)?;
 
-            // TODO put used patterns from dbpatterns
-            // TODO construct FilterItems
+            // keep only glob patterns that are used by the filter
+            let dbpatterns = dbpatterns.into_iter().filter(|item| {
+                dbfilter_patterns
+                    .iter()
+                    .find(|pattern| pattern.glob_pattern_id == item.id)
+                    .is_some()
+            });
 
-            todo!()
+            // build new patterns list
+            let mut patterns = Vec::<Pattern>::new();
+            let mut pattern_id_to_index = HashMap::<DbId, usize>::new();
+
+            for filtered_pat in dbpatterns {
+                let found_pattern = pattern_id_to_index.get(&filtered_pat.id);
+                if found_pattern.is_none() {
+                    let new_index = patterns.len();
+                    patterns.push(Pattern::new(&filtered_pat.regexp));
+                    pattern_id_to_index.insert(filtered_pat.id, new_index);
+                }
+            }
+
+            let mut filter_items = Vec::<FilterItem>::new();
+            // build filter items
+            for filter_pat in dbfilter_patterns {
+                filter_items.push(FilterItem {
+                    pattern_index: *pattern_id_to_index
+                        .get(&filter_pat.glob_pattern_id)
+                        .unwrap(),
+                    include: filter_pat.include,
+                });
+            }
+            Ok(Filter {
+                patterns,
+                items: filter_items,
+            })
         }
     }
 }
@@ -651,5 +684,16 @@ mod tests {
         let mut gen = write::IdGen::new_with_last_id(0);
         assert_eq!(gen.gen_id(), 1);
         assert_eq!(gen.gen_id(), 2);
+    }
+
+    #[test]
+    fn glob_filter_by_id_test() {
+        let conn = write::open_and_make(":memory:").unwrap();
+        let db = read::Db::new(&conn).unwrap();
+
+        let mut default_filter = db.glob_filter_by_id(1).unwrap();
+        eprintln!("default filter = {:?}", default_filter);
+        assert!(default_filter.include("/asdasd/abra.jpeg"));
+        assert_eq!(default_filter.include("asdasd/.git/abra.jpeg"), false);
     }
 }
