@@ -51,7 +51,7 @@ pub mod read {
 
     type FsResult<T> = anyhow::Result<T>;
     /// return true to include the path
-    type FilterFn = dyn Fn(&Path) -> bool;
+    type FilterFn<'a> = dyn FnMut(&Path) -> bool + 'a;
 
     /// not recursive
     /*
@@ -78,7 +78,7 @@ pub mod read {
     // fs::read_dir -> filter path -> map to dir_entry -> collect?
     pub fn dir_entries<'a>(
         path: &'a Path,
-        filter_fn: Option<&'a FilterFn>,
+        filter_fn: &'a mut FilterFn,
     ) -> FsResult<Box<dyn Iterator<Item = FsDirEntry> + 'a>> {
         let path_str = path.to_string_lossy();
         let res = std::fs::read_dir(path)?
@@ -89,10 +89,7 @@ pub mod read {
                     None
                 }
             })
-            .filter(move |item| match filter_fn {
-                Some(f) => f(&item.path()),
-                None => true,
-            })
+            .filter(|item| filter_fn(&item.path()))
             .map(|item| {
                 let r = dir_entry(&item.path());
                 if r.is_err() {
@@ -143,6 +140,7 @@ pub mod read {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     #[test]
     fn dir_entry() {
         let e = read::dir_entry(std::path::Path::new("../README.adoc")).unwrap();
@@ -161,7 +159,9 @@ mod tests {
 
     #[test]
     fn dir_entries() {
-        let items = read::dir_entries(std::path::Path::new("../sample-data"), None).unwrap();
+        let mut filter_fn = |_: &Path| true;
+        let items =
+            read::dir_entries(std::path::Path::new("../sample-data"), &mut filter_fn).unwrap();
         let mut count = 0;
         let known = ["img1.jxl", "img1.jpg", "img1.webp"];
         let mut found = Vec::<String>::new();

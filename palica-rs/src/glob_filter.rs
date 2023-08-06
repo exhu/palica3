@@ -57,6 +57,18 @@ pub struct Filter {
 }
 
 impl Filter {
+    /// Creates default filter that accepts every non-empty path.
+    pub fn new() -> Filter {
+        let mut patterns = Vec::new();
+        patterns.push(Pattern::new(".+"));
+
+        let mut items = Vec::new();
+        items.push(FilterItem {
+            pattern_index: 0,
+            include: true,
+        });
+        Filter { patterns, items }
+    }
     /// true if the text must be included (allowed by the filter)
     pub fn include(&mut self, text: &str) -> bool {
         self.items.iter().fold(false, |prev, i| {

@@ -18,9 +18,11 @@
 use crate::dblayer::{Collection, DbId, DirEntry};
 use crate::fsdbtime::dbtime_from_sys;
 use crate::fslayer::{read, FsDirEntry};
+use crate::glob_filter::Filter;
 use crate::{dblayer, fslayer};
 
 use std::collections::VecDeque;
+use std::path::Path;
 use std::time::SystemTime;
 
 pub type CollResult<T> = anyhow::Result<T>;
@@ -42,6 +44,7 @@ pub fn new_collection(
     name: &str,
     src_path: &std::path::Path,
     filter_id: DbId,
+    filter: &mut Filter,
     on_new_direntry: &OnNewDirEntry,
 ) -> CollResult<Collection> {
     let src_path = src_path.canonicalize()?;
@@ -66,10 +69,10 @@ pub fn new_collection(
     let mut subdirs = VecDeque::<(DbId, std::path::PathBuf)>::new();
     subdirs.push_back((root_entry.id, src_path.to_owned()));
 
-    // TODO get filter
+    let mut filter_fn = |item: &Path| filter.include(&item.to_string_lossy());
 
     while let Some((root_id, root_path)) = subdirs.pop_front() {
-        if let Ok(entries) = fslayer::read::dir_entries(&root_path, None) {
+        if let Ok(entries) = fslayer::read::dir_entries(&root_path, &mut filter_fn) {
             for item in entries {
                 let db_item = new_entry_from_fs(&item, id_gen.gen_id(), sync_time);
                 eprintln!("db_item = {:?}", &db_item);
@@ -91,14 +94,22 @@ pub fn new_collection(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::glob_filter::Filter;
     use dblayer::write;
     #[test]
     fn new_col() {
         let conn = write::open_and_make(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
-        let col = new_collection(&mut db, "testcol", &std::path::Path::new("./"), 1, &|e| {
-            eprintln!("new entry {:?}", &e);
-        });
+        let col = new_collection(
+            &mut db,
+            "testcol",
+            &std::path::Path::new("./"),
+            1,
+            &mut Filter::new(),
+            &|e| {
+                eprintln!("new entry {:?}", &e);
+            },
+        );
         eprintln!("{:?}", col);
         assert!(col.is_ok());
     }
