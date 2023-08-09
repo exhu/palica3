@@ -15,7 +15,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+use crate::coll_builder;
+use crate::dblayer::read;
+use crate::dblayer::write;
 use crate::dblayer::DbId;
+use std::path::Path;
 use std::process::ExitCode;
 
 pub struct CollectionAdd {
@@ -28,5 +32,32 @@ pub struct CollectionAdd {
 }
 
 pub fn collection_add(args: CollectionAdd) -> ExitCode {
+    // TODO proper error handling
+    // TODO check yes for create new db
+    // TODO check for existing col
+    // TODO check for used path for some other col
+    let conn = write::open_and_make(&args.db_file_name).unwrap();
+    let rdb = read::Db::new(&conn).unwrap();
+    let mut filter = rdb.glob_filter_by_id(args.filter_id).unwrap();
+    let mut wdb = write::Db::new(&conn).unwrap();
+    let col = coll_builder::new_collection(
+        &mut wdb,
+        &args.name,
+        &Path::new(&args.path),
+        args.filter_id,
+        &mut filter,
+        &|e| {
+            println!("new entry {:?}", &e);
+        },
+    );
+    if col.is_err() {
+        println!("ERROR: {}", col.err().unwrap());
+        return ExitCode::FAILURE;
+    }
+    ExitCode::SUCCESS
+}
+
+pub fn collection_list(db_file_name: &str) -> ExitCode {
+    // TODO
     ExitCode::SUCCESS
 }

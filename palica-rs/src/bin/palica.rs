@@ -39,8 +39,9 @@ enum Command {
 struct AddCommand {
     #[arg(long = "db", help = "Database filename.")]
     pub db_file_name: String,
+    #[arg(long = "verbose", help = "Database filename.")]
     pub verbose: Option<bool>,
-    #[arg(help = "Do not ask for confirmations.")]
+    #[arg(long = "yes", help = "Do not ask for confirmations.")]
     pub yes: Option<bool>,
     #[arg(help = "Collection name.")]
     pub name: String,
@@ -51,7 +52,10 @@ struct AddCommand {
 }
 
 #[derive(clap::Args, Debug)]
-struct ListCommand {}
+struct ListCommand {
+    #[arg(long = "db", help = "Database filename.")]
+    pub db_file_name: String,
+}
 
 #[derive(clap::Args, Debug)]
 struct TreeCommand {}
@@ -74,6 +78,8 @@ fn main() -> ExitCode {
             path: c.path,
             filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
         }),
+        Command::List(c) => cli::collection_list(&c.db_file_name),
+        // TODO List, Tree
         _ => ExitCode::FAILURE,
     };
 

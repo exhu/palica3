@@ -27,6 +27,7 @@ pub struct Transaction<'a> {
 
 impl Transaction<'_> {
     pub fn new<'a>(conn: &'a sqlite::Connection) -> Transaction<'a> {
+        eprintln!("starting tx...");
         conn.execute("BEGIN").expect("Failed to begin tx.");
         Transaction {
             conn,
@@ -35,11 +36,13 @@ impl Transaction<'_> {
     }
 
     pub fn commit(&mut self) {
+        eprintln!("commiting tx...");
         self.conn.execute("END").expect("Failed to commit tx.");
         self.finished = true;
     }
 
     pub fn rollback(&mut self) {
+        eprintln!("rollback tx...");
         self.conn
             .execute("ROLLBACK")
             .expect("Failed to rollback tx.");
@@ -494,18 +497,13 @@ pub mod write {
             let schema = "sql/schema1.sql";
             eprintln!("reading schema {}", schema);
             let sql = read_to_string(schema)?;
-            //begin(&conn)?;
-            eprintln!("started tx");
             match conn.execute(sql) {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!("failed tx {:?}", e);
-                    //rollback(&conn)?;
+                    eprintln!("failed {:?}", e);
                     return Err(e.into());
                 }
             }
-            eprintln!("commiting tx");
-            //commit(&conn)?;
         } else {
             if !check_database_validity(&conn) {
                 return Err(DbError::WrongDbSchema.into());
