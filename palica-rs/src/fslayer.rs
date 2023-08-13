@@ -49,6 +49,7 @@ pub mod read {
     use super::FsDirEntry;
     use std::path::Path;
 
+    // TODO use thiserror and meaningful errors
     type FsResult<T> = anyhow::Result<T>;
     /// return true to include the path
     type FilterFn<'a> = dyn FnMut(&Path) -> bool + 'a;

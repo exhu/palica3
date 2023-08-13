@@ -169,6 +169,7 @@ pub enum DbError {
 */
 
 //pub type DbResult<T> = Result<T, DbError>;
+// TODO use thiserror and meaningful errors
 pub type DbResult<T> = anyhow::Result<T>;
 
 pub mod read {

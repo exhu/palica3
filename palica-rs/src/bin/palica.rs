@@ -18,7 +18,6 @@
 use clap::Parser;
 use palica::cli;
 use palica::dblayer;
-use std::process::ExitCode;
 
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
@@ -66,10 +65,10 @@ struct RemoveCommand {}
 #[derive(clap::Args, Debug)]
 struct FiltersCommand {}
 
-fn main() -> ExitCode {
+fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
     println!("{:?}", parsed);
-    let ret = match parsed {
+    match parsed {
         Command::Add(c) => cli::collection_add(cli::CollectionAdd {
             db_file_name: c.db_file_name,
             verbose: c.verbose.unwrap_or(false),
@@ -77,11 +76,10 @@ fn main() -> ExitCode {
             name: c.name,
             path: c.path,
             filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
-        }),
-        Command::List(c) => cli::collection_list(&c.db_file_name),
-        // TODO List, Tree
-        _ => ExitCode::FAILURE,
+        })?,
+        Command::List(c) => cli::collection_list(&c.db_file_name)?,
+        // TODO Tree
+        _ => todo!(),
     };
-
-    ret
+    Ok(())
 }
