@@ -31,19 +31,33 @@ pub struct CollectionAdd {
     pub filter_id: DbId,
 }
 
+fn check_with_existing_paths(rdb: &read::Db, fs_path: &str) {
+    let cols = rdb
+        .collections_by_fs_path(fs_path)
+        .expect("check_with_existing_paths: Failed to read db.");
+    if cols.is_empty() == false {
+        println!("WARNING: there are existing collections with the same path '{fs_path}':");
+        for c in cols {
+            println!("{}, {}", c.id, c.coll_name);
+        }
+    }
+}
+
 pub fn collection_add(args: CollectionAdd) -> ExitCode {
     // TODO proper error handling
     // TODO check yes for create new db
     // TODO check for existing col
-    // TODO check for used path for some other col
     let conn = write::open_and_make(&args.db_file_name).unwrap();
     let rdb = read::Db::new(&conn).unwrap();
+    let norm_path = crate::fslayer::read::normalized_abspath(&args.path);
+    check_with_existing_paths(&rdb, &norm_path);
+
     let mut filter = rdb.glob_filter_by_id(args.filter_id).unwrap();
     let mut wdb = write::Db::new(&conn).unwrap();
     let col = coll_builder::new_collection(
         &mut wdb,
         &args.name,
-        &Path::new(&args.path),
+        &Path::new(&norm_path),
         args.filter_id,
         &mut filter,
         &|e| {

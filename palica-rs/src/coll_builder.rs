@@ -57,12 +57,8 @@ pub fn new_collection(
     let new_id = id_gen.gen_id();
     let root_entry: DirEntry = new_entry_from_fs(&root_fs_entry, new_id, sync_time);
     write_db.create_dir_entry(&root_entry)?;
-    let col = write_db.create_collection(
-        name,
-        src_path.file_name().unwrap().to_str().unwrap().into(),
-        root_entry.id,
-        filter_id,
-    )?;
+    let col =
+        write_db.create_collection(name, &src_path.to_string_lossy(), root_entry.id, filter_id)?;
     on_new_direntry(&root_entry);
 
     // subdirs -> parent_id, Path

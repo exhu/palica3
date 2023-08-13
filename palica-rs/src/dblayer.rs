@@ -234,13 +234,7 @@ pub mod read {
                 root_id, glob_filter_id FROM collections ORDER BY coll_name",
             )?;
             for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Collection {
-                    id: row.read::<i64, usize>(0),
-                    coll_name: row.read::<&str, usize>(1).to_string(),
-                    fs_path: row.read::<&str, usize>(2).to_string(),
-                    root_id: row.read::<i64, usize>(3),
-                    glob_filter_id: row.read::<i64, usize>(4),
-                };
+                let c = Self::collection_from_row(&row);
                 res.push(c);
             }
             Ok(res)
@@ -335,6 +329,31 @@ pub mod read {
                 patterns,
                 items: filter_items,
             })
+        }
+
+        fn collection_from_row(row: &sqlite::Row) -> Collection {
+            Collection {
+                id: row.read::<i64, usize>(0),
+                coll_name: row.read::<&str, usize>(1).to_string(),
+                fs_path: row.read::<&str, usize>(2).to_string(),
+                root_id: row.read::<i64, usize>(3),
+                glob_filter_id: row.read::<i64, usize>(4),
+            }
+        }
+
+        pub fn collections_by_fs_path(&self, fs_path: &str) -> DbResult<Vec<Collection>> {
+            let mut res: Vec<Collection> = Vec::new();
+            let mut prep = self.conn.prepare(
+                "SELECT id, coll_name, fs_path,
+                root_id, glob_filter_id FROM collections WHERE fs_path=?1
+                ORDER BY coll_name",
+            )?;
+            prep.bind((1, fs_path))?;
+            for row in prep.into_iter().map(|row| row.unwrap()) {
+                let c = Self::collection_from_row(&row);
+                res.push(c);
+            }
+            Ok(res)
         }
     }
 }
