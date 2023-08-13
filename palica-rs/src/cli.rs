@@ -71,7 +71,22 @@ pub fn collection_add(args: CollectionAdd) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+fn collection_list_err(db_file_name: &str) -> anyhow::Result<()> {
+    let conn = read::open_existing(db_file_name)?;
+    let rdb = read::Db::new(&conn)?;
+    let cols = rdb.enum_collections()?;
+    for col in cols {
+        println!("{},{},{}", col.id, col.coll_name, col.fs_path);
+    }
+    Ok(())
+}
+
 pub fn collection_list(db_file_name: &str) -> ExitCode {
-    // TODO
-    ExitCode::SUCCESS
+    match collection_list_err(db_file_name) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            println!("ERROR: {e}");
+            ExitCode::FAILURE
+        }
+    }
 }
