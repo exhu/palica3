@@ -23,6 +23,29 @@ use crate::dblayer::write;
 use crate::dblayer::DbId;
 use std::path::Path;
 
+enum YesNo {
+    Yes,
+    No,
+}
+
+fn ask_confirmation(msg: &str) -> Result<YesNo, std::io::Error> {
+    loop {
+        println!("{msg}(y/n)");
+        let mut answer = String::new();
+        std::io::stdin().read_line(&mut answer)?;
+        /*
+        if answer == "y" || answer == "Y" {
+            return Ok(YesNo::Yes);
+        }
+        */
+        match answer.as_str() {
+            "y" | "Y" => return Ok(YesNo::Yes),
+            "n" | "N" => return Ok(YesNo::No),
+            _ => (),
+        }
+    }
+}
+
 pub struct CollectionAdd {
     pub db_file_name: String,
     pub verbose: bool,
@@ -73,7 +96,14 @@ pub fn collection_list(db_file_name: &str) -> anyhow::Result<()> {
     let rdb = read::Db::new(&conn)?;
     let cols = rdb.enum_collections()?;
     for col in cols {
-        println!("{},{},{}", col.id, col.coll_name, col.fs_path);
+        println!("{},{}", col.coll_name, col.fs_path);
     }
+    Ok(())
+}
+
+pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()> {
+    let conn = read::open_existing(db_file_name)?;
+    let rdb = read::Db::new(&conn)?;
+    // TODO find by name
     Ok(())
 }
