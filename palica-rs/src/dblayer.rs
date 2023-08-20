@@ -356,6 +356,19 @@ pub mod read {
             }
             Ok(res)
         }
+
+        pub fn collection_by_name(&self, name: &str) -> DbResult<Option<Collection>> {
+            let mut prep = self.conn.prepare(
+                "SELECT id, coll_name, fs_path,
+                root_id, glob_filter_id FROM collections WHERE coll_name=?1",
+            )?;
+            prep.bind((1, name))?;
+            for row in prep.into_iter().map(|row| row.unwrap()) {
+                let c = Self::collection_from_row(&row);
+                return Ok(Some(c));
+            }
+            Ok(None)
+        }
     }
 }
 
@@ -713,5 +726,16 @@ mod tests {
         eprintln!("default filter = {:?}", default_filter);
         assert!(default_filter.include("/asdasd/abra.jpeg"));
         assert_eq!(default_filter.include("asdasd/.git/abra.jpeg"), false);
+    }
+
+    #[test]
+    fn col_by_name() {
+        let conn = write::open_and_make(":memory:").unwrap();
+        let db = write::Db::new(&conn).unwrap();
+        let _col = db.create_collection("cola", "mypath", 1, 1).unwrap();
+        let dbread = read::Db::new(&conn).unwrap();
+        let c = dbread.collection_by_name("cola").unwrap();
+        assert_eq!(c.is_some(), true);
+        assert_eq!(c.unwrap().coll_name, "cola");
     }
 }

@@ -33,11 +33,6 @@ fn ask_confirmation(msg: &str) -> Result<YesNo, std::io::Error> {
         println!("{msg}(y/n)");
         let mut answer = String::new();
         std::io::stdin().read_line(&mut answer)?;
-        /*
-        if answer == "y" || answer == "Y" {
-            return Ok(YesNo::Yes);
-        }
-        */
         match answer.as_str() {
             "y" | "Y" => return Ok(YesNo::Yes),
             "n" | "N" => return Ok(YesNo::No),
@@ -104,6 +99,7 @@ pub fn collection_list(db_file_name: &str) -> anyhow::Result<()> {
 pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()> {
     let conn = read::open_existing(db_file_name)?;
     let rdb = read::Db::new(&conn)?;
-    // TODO find by name
+    let col = rdb.collection_by_name(col_name)?;
+    // TODO handle None
     Ok(())
 }
