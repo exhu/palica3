@@ -57,7 +57,16 @@ fn check_with_existing_paths(rdb: &read::Db, fs_path: &str) -> anyhow::Result<()
     if cols.is_empty() == false {
         println!("WARNING: there are existing collections with the same path '{fs_path}':");
         for c in cols {
-            println!("{}, {}", c.id, c.coll_name);
+            eprintln!("{}, {}", c.id, c.coll_name);
+        }
+        match ask_confirmation("Still continue?") {
+            Err(e) => {
+                return Err(e.into());
+            }
+            Ok(YesNo::No) => {
+                return Err(anyhow::Error::msg("User canceled."));
+            }
+            Ok(YesNo::Yes) => {}
         }
     }
     Ok(())
@@ -100,6 +109,10 @@ pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()>
     let conn = read::open_existing(db_file_name)?;
     let rdb = read::Db::new(&conn)?;
     let col = rdb.collection_by_name(col_name)?;
-    // TODO handle None
+    if col.is_none() {
+        return Err(anyhow::Error::msg("No such collection."));
+    }
+    let col = col.unwrap();
+    // TODO
     Ok(())
 }

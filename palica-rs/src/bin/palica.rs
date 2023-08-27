@@ -57,7 +57,12 @@ struct ListCommand {
 }
 
 #[derive(clap::Args, Debug)]
-struct TreeCommand {}
+struct TreeCommand {
+    #[arg(long = "db", help = "Database filename.")]
+    pub db_file_name: String,
+    #[arg(help = "Collection name.")]
+    pub name: String,
+}
 
 #[derive(clap::Args, Debug)]
 struct RemoveCommand {}
@@ -78,7 +83,8 @@ fn main() -> anyhow::Result<()> {
             filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
         })?,
         Command::List(c) => cli::collection_list(&c.db_file_name)?,
-        // TODO Tree
+        Command::Tree(c) => cli::collection_tree(&c.db_file_name, &c.name)?,
+        // TODO
         _ => todo!(),
     };
     Ok(())
