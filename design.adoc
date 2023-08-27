@@ -149,3 +149,29 @@ Create on demand with exiftool:
 
     * on adding tags
     * on user request
+
+== CLI workflow for quickly tagging
+
+A command to generate a file list (*select*) from the database based on the specified name,
+collection, date, tags, other criteria.
+
+A new command tool (*iterate*) is needed to perform browsing over a list of files, allowing 
+a user to attach/remove tags, calling viewer apps. The tool does not modify the
+database, instead it produces a file list with tag changes.
+
+Another tool (*apply_tags*) is needed to apply tag changes on the database.
+
+Workflow with files from a collection:
+    * generate (*select*) a file list text file based on collections, types,
+        tags, names, dates etc., pass it too a new tagging tool (*iterate*);
+    * specify a viewer app to use, probably need a config for mime types
+        (e.g. 'mpv' for video, audio files, gwenview for images...);
+    * call the viewer app for a file, after the app exits ask user for tags, move
+        forward/backward, show again, stop...
+    * upon exit output the new file list with tags;
+    * use *apply_tags* to commit the changes.
+
+== Data removal
+
+A new command *delete* takes a list of files and removes the associated data
+from the database, and (optionally) from the media.
