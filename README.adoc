@@ -9,6 +9,9 @@ primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
+** file list (all files of a collection)
+** tree? (may be there's a linux command to format file list as tree)
+** remove
 ** implement sync
 ** use filter when populating/sync collection
 ** don't allow to delete patterns used in a filter
@@ -41,14 +44,10 @@ via fs uuid (e.g. blkid)
 == DONE
 * collection
 ** save filter name for collection
-** replace writelns with error api
-** not applicable: replace AutoDb with Unique/Scoped, move .close to destructor
-** remove
 ** add, warn if there're collections with the same source path
 * scan directory tree, build collection
 * basic db operations (collection, direntry objects)
 * basic fs operations (directory entry info)
-* replace direct sqlite3 calls with d2sqlite3
 * make a better cli and usage screen (parse args based on command)
 * metadata database
 ** name

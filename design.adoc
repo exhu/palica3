@@ -162,6 +162,7 @@ database, instead it produces a file list with tag changes.
 Another tool (*apply_tags*) is needed to apply tag changes on the database.
 
 Workflow with files from a collection:
+
     * generate (*select*) a file list text file based on collections, types,
         tags, names, dates etc., pass it too a new tagging tool (*iterate*);
     * specify a viewer app to use, probably need a config for mime types
