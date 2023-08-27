@@ -152,6 +152,10 @@ Create on demand with exiftool:
 
 == CLI workflow for quickly tagging
 
+The app outputs file lists in text format with root element being the name
+of a collection, or some other structured format (e.g. json) for complex
+operations. There should be an option to output a list of on disk file paths.
+
 A command to generate a file list (*select*) from the database based on the specified name,
 collection, date, tags, other criteria.
 
@@ -176,3 +180,5 @@ Workflow with files from a collection:
 
 A new command *delete* takes a list of files and removes the associated data
 from the database, and (optionally) from the media.
+
+There must be a warning of several collections sharing the same path.
