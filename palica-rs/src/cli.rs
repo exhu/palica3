@@ -107,12 +107,74 @@ pub fn collection_list(db_file_name: &str) -> anyhow::Result<()> {
 
 pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()> {
     let conn = read::open_existing(db_file_name)?;
-    let rdb = read::Db::new(&conn)?;
+    let mut rdb = read::Db::new(&conn)?;
     let col = rdb.collection_by_name(col_name)?;
     if col.is_none() {
         return Err(anyhow::Error::msg("No such collection."));
     }
     let col = col.unwrap();
+
+    // stack of subdirs to visit
+    let mut root_ids = Vec::<RootIdAndOffset>::new();
+    root_ids.push(RootIdAndOffset {
+        root_id: col.root_id,
+        depth: 0,
+        display_at: 0,
+    });
+    let mut tree_items = Vec::<TreeItem>::new();
+    // dir, subdirs..., subdirs of subdirs,next dir
+    let mut display_order = Vec::<usize>::new();
+
+    while let Some(root_id_offset) = root_ids.pop() {
+        let cur_depth = root_id_offset.depth + 1;
+        let mut cur_display_at = root_id_offset.display_at;
+        let contents = rdb.enum_dir_entries(root_id_offset.root_id)?;
+        for diritem in contents {
+            let new_item_index = tree_items.len();
+            display_order.insert(cur_display_at, new_item_index);
+            cur_display_at += 1;
+            tree_items.push(TreeItem {
+                depth: cur_depth,
+                name: diritem.fs_name,
+                size: diritem.fs_size,
+            });
+            if diritem.is_dir {
+                root_ids.push(RootIdAndOffset {
+                    root_id: diritem.id,
+                    depth: cur_depth,
+                    display_at: display_order.len(),
+                });
+            }
+        }
+    }
+
+    for display_index in display_order {
+        let item = &tree_items[display_index];
+        for _ in 0..item.depth {
+            print!(" ");
+        }
+        println!("{}", item.name);
+    }
+    /*
+    let items = contents.into_iter().map(|dir_entry| TreeItem {
+        offset: cur_offset,
+        name: dir_entry.fs_name,
+        size: dir_entry.fs_size,
+    });
+    */
+
     // TODO
     Ok(())
+}
+
+struct RootIdAndOffset {
+    pub root_id: DbId,
+    pub depth: u32,
+    pub display_at: usize,
+}
+
+struct TreeItem {
+    pub depth: u32,
+    pub name: String,
+    pub size: i64,
 }

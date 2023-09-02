@@ -241,7 +241,7 @@ pub mod read {
             Ok(res)
         }
 
-        // TODO return iterator?
+        /// returns items sorted by name, directories first
         pub fn enum_dir_entries(&mut self, parent_id: DbId) -> DbResult<Vec<DirEntry>> {
             self.list_dir.bind((1, parent_id))?;
             let res = self
