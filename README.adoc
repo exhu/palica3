@@ -9,11 +9,12 @@ primary usage is for image and video files on removable storage.
 
 == TODO
 * collection
-** file list (all files of a collection)
-** tree? (may be there's a linux command to format file list as tree)
 ** remove
+*** file
+*** dir
+*** collection
 ** implement sync
-** use filter when populating/sync collection
+** tree? (may be there's a linux command to format file list as tree)
 ** don't allow to delete patterns used in a filter
 ** don't allow to delete filters used by collections
 ** add file, dir, files from list, ignore hidden files/folders ".*"
@@ -43,6 +44,8 @@ via fs uuid (e.g. blkid)
 
 == DONE
 * collection
+** use filter when populating/sync collection
+** file list (all files of a collection)
 ** save filter name for collection
 ** add, warn if there're collections with the same source path
 * scan directory tree, build collection

@@ -153,17 +153,8 @@ pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()>
         for _ in 0..item.depth {
             print!(" ");
         }
-        println!("{}", item.name);
+        println!("{}\t{}", item.name, item.size);
     }
-    /*
-    let items = contents.into_iter().map(|dir_entry| TreeItem {
-        offset: cur_offset,
-        name: dir_entry.fs_name,
-        size: dir_entry.fs_size,
-    });
-    */
-
-    // TODO
     Ok(())
 }
 
