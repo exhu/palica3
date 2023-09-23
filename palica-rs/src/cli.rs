@@ -75,7 +75,7 @@ fn check_with_existing_paths(rdb: &read::Db, fs_path: &str) -> anyhow::Result<()
 pub fn collection_add(args: CollectionAdd) -> anyhow::Result<()> {
     // TODO check yes for create new db
     // TODO check for existing col
-    let conn = write::open_and_make(&args.db_file_name)?;
+    let conn = write::open_or_make(&args.db_file_name)?;
     let rdb = read::Db::new(&conn)?;
     let norm_path = crate::fslayer::read::normalized_abspath(&args.path);
     check_with_existing_paths(&rdb, &norm_path)?;

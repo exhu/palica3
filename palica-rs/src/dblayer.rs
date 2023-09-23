@@ -417,6 +417,18 @@ pub mod write {
         map_dir: sqlite::Statement<'a>,
     }
 
+    use thiserror::Error;
+
+    #[derive(Error, Debug)]
+    pub enum DeleteError {
+        #[error("unknown")]
+        Unknown,
+        #[error("Not a file")]
+        NotAfile { name: String },
+        #[error("Not a directory")]
+        NotAdir { name: String },
+    }
+
     impl Db<'_> {
         pub fn new<'a>(conn: &'a sqlite::Connection) -> DbResult<Db<'a>> {
             Ok(Db {
@@ -512,29 +524,78 @@ pub mod write {
             Ok(())
         }
 
-        fn delete_dir_entry_dir(&mut self, entry: DirEntry) {
-            // TODO delete files
+        // TODO provide text message to Unknown errors
+        fn delete_dir_entry_dir(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
+            if !entry.is_dir {
+                return Err(DeleteError::NotAfile {
+                    name: entry.fs_name,
+                });
+            }
+            let mut subdirs = Vec::<DirEntry>::new();
+            subdirs.push(entry);
+            let mut read_db;
+            match super::read::Db::new(self.conn) {
+                Ok(r) => read_db = r,
+                Err(_) => return Err(DeleteError::Unknown),
+            }
+            while let Some(subdir) = subdirs.pop() {
+                let contents = read_db
+                    .enum_dir_entries(subdir.id)
+                    .map_err(|_| DeleteError::Unknown)?;
+                for item in contents {
+                    if item.is_dir {
+                        subdirs.push(item);
+                    } else {
+                        self.delete_dir_entry_file(item)?;
+                    }
+                }
+                let mut stmt = self
+                    .conn
+                    .prepare("DELETE FROM dir_entries WHERE id = ?1")
+                    .map_err(|_| DeleteError::Unknown)?;
+
+                stmt.bind((1, subdir.id))
+                    .map_err(|_| DeleteError::Unknown)?;
+                loop {
+                    match stmt.next() {
+                        Ok(state) => {
+                            if state == sqlite::State::Done {
+                                break;
+                            }
+                        }
+                        Err(_) => return Err(DeleteError::Unknown),
+                    }
+                }
+            }
+            Ok(())
         }
 
-        fn delete_dir_entry_file(&mut self, entry: DirEntry) {
+        fn delete_dir_entry_file(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
+            if entry.is_dir {
+                return Err(DeleteError::NotAfile {
+                    name: entry.fs_name,
+                });
+            }
             // TODO dir_to_sub, dir_entries, tag_to_dir_entry, last_edit, mime_to_dir_entry
             // TODO thumbnails
+            Ok(())
         }
 
-        pub fn delete_dir_entry(&mut self, entry: DirEntry) {
+        pub fn delete_dir_entry(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
             let mut tx = Transaction::new(&self.conn);
             if entry.is_dir {
-                self.delete_dir_entry_dir(entry);
+                self.delete_dir_entry_dir(entry)?;
             } else {
-                self.delete_dir_entry_file(entry);
+                self.delete_dir_entry_file(entry)?;
             }
 
             tx.commit();
+            Ok(())
         }
     }
 
     /// Either open an existing, or initialize a new database.
-    pub fn open_and_make(fname: &str) -> DbResult<sqlite::Connection> {
+    pub fn open_or_make(fname: &str) -> DbResult<sqlite::Connection> {
         use super::read::{check_database_validity, DbError};
         use std::fs::read_to_string;
         use std::path::Path;
@@ -572,7 +633,7 @@ mod tests {
     use super::*;
     #[test]
     fn open_and_make() {
-        let r = write::open_and_make(":memory:");
+        let r = write::open_or_make(":memory:");
         match r {
             Ok(_) => (),
             Err(_) => panic!("failed to create db"),
@@ -581,7 +642,7 @@ mod tests {
 
     #[test]
     fn create_dir_and_map() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
 
         let mut db = write::Db::new(&conn).unwrap();
 
@@ -619,7 +680,7 @@ mod tests {
 
     #[test]
     fn create_collection() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
         let col = db.create_collection("myname", "mypath", 1, 1).unwrap();
@@ -637,14 +698,14 @@ mod tests {
             remove_file(temp_filename).unwrap();
         }
 
-        write::open_and_make(&temp_filename).unwrap();
+        write::open_or_make(&temp_filename).unwrap();
         read::open_existing(&temp_filename).unwrap();
         remove_file(temp_filename).unwrap();
     }
 
     #[test]
     fn enum_collections() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
         let _col = db.create_collection("myname", "mypath", 1, 1).unwrap();
@@ -660,7 +721,7 @@ mod tests {
 
     #[test]
     fn enum_dir() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
 
         let mut db = write::Db::new(&conn).unwrap();
 
@@ -739,7 +800,7 @@ mod tests {
 
     #[test]
     fn glob_filter_by_id_test() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
         let db = read::Db::new(&conn).unwrap();
 
         let mut default_filter = db.glob_filter_by_id(1).unwrap();
@@ -750,7 +811,7 @@ mod tests {
 
     #[test]
     fn col_by_name() {
-        let conn = write::open_and_make(":memory:").unwrap();
+        let conn = write::open_or_make(":memory:").unwrap();
         let db = write::Db::new(&conn).unwrap();
         let _col = db.create_collection("cola", "mypath", 1, 1).unwrap();
         let dbread = read::Db::new(&conn).unwrap();
