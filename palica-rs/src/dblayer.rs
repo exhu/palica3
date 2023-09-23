@@ -871,4 +871,80 @@ mod tests {
         assert_eq!(c.is_some(), true);
         assert_eq!(c.unwrap().coll_name, "cola");
     }
+
+    #[test]
+    fn delete_dir() {
+        let conn = write::open_or_make(":memory:").unwrap();
+        let mut db = write::Db::new(&conn).unwrap();
+        let max_id = db.max_id(DirEntry::table_name());
+        assert_eq!(max_id, 0);
+        let mydir_id = max_id + 1;
+        let dir = DirEntry {
+            id: mydir_id,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        };
+        db.create_dir_entry(&dir).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
+
+        let myfile_id = mydir_id + 1;
+
+        db.create_dir_entry(&DirEntry {
+            id: myfile_id,
+            fs_name: "myfile".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 7,
+        })
+        .unwrap();
+
+        db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 2);
+        db.delete_dir_entry(dir).unwrap();
+        assert_eq!(db.max_id(DirEntry::table_name()), 0);
+    }
+
+    #[test]
+    fn delete_file() {
+        let conn = write::open_or_make(":memory:").unwrap();
+        let mut db = write::Db::new(&conn).unwrap();
+        let max_id = db.max_id(DirEntry::table_name());
+        assert_eq!(max_id, 0);
+        let mydir_id = max_id + 1;
+        let dir = DirEntry {
+            id: mydir_id,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        };
+        db.create_dir_entry(&dir).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
+
+        let myfile_id = mydir_id + 1;
+
+        let file_entry = DirEntry {
+            id: myfile_id,
+            fs_name: "myfile".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 7,
+        };
+        db.create_dir_entry(&file_entry).unwrap();
+
+        db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 2);
+        db.delete_dir_entry(file_entry).unwrap();
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
+    }
 }
