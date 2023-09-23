@@ -172,6 +172,40 @@ pub enum DbError {
 // TODO use thiserror and meaningful errors
 pub type DbResult<T> = anyhow::Result<T>;
 
+fn complete_statement(stmt: &mut sqlite::Statement) -> sqlite::Result<()> {
+    loop {
+        match stmt.next() {
+            Ok(state) => {
+                if state == sqlite::State::Done {
+                    break;
+                }
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
+fn exec_statement_with_arg<T>(stmt: &mut sqlite::Statement, arg: T) -> sqlite::Result<()>
+where
+    T: sqlite::BindableWithIndex,
+{
+    stmt.bind((1, arg))?;
+    complete_statement(stmt)
+}
+
+fn exec_sql_stmt_with_arg<T>(
+    conn: &sqlite::Connection,
+    sql_text: &'static str,
+    arg: T,
+) -> sqlite::Result<()>
+where
+    T: sqlite::BindableWithIndex,
+{
+    let mut stmt = conn.prepare(sql_text)?;
+    exec_statement_with_arg(&mut stmt, arg)
+}
+
 pub mod read {
     use std::collections::HashMap;
 
@@ -533,11 +567,7 @@ pub mod write {
             }
             let mut subdirs = Vec::<DirEntry>::new();
             subdirs.push(entry);
-            let mut read_db;
-            match super::read::Db::new(self.conn) {
-                Ok(r) => read_db = r,
-                Err(_) => return Err(DeleteError::Unknown),
-            }
+            let mut read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
             while let Some(subdir) = subdirs.pop() {
                 let contents = read_db
                     .enum_dir_entries(subdir.id)
@@ -549,23 +579,20 @@ pub mod write {
                         self.delete_dir_entry_file(item)?;
                     }
                 }
-                let mut stmt = self
-                    .conn
-                    .prepare("DELETE FROM dir_entries WHERE id = ?1")
-                    .map_err(|_| DeleteError::Unknown)?;
 
-                stmt.bind((1, subdir.id))
-                    .map_err(|_| DeleteError::Unknown)?;
-                loop {
-                    match stmt.next() {
-                        Ok(state) => {
-                            if state == sqlite::State::Done {
-                                break;
-                            }
-                        }
-                        Err(_) => return Err(DeleteError::Unknown),
-                    }
-                }
+                exec_sql_stmt_with_arg(
+                    self.conn,
+                    "DELETE FROM dir_entries WHERE id = ?1",
+                    subdir.id,
+                )
+                .map_err(|_| DeleteError::Unknown)?;
+
+                exec_sql_stmt_with_arg(
+                    self.conn,
+                    "DELETE FROM dir_to_sub WHERE directory_id = ?1 OR entry_id = ?1",
+                    subdir.id,
+                )
+                .map_err(|_| DeleteError::Unknown)?;
             }
             Ok(())
         }
@@ -578,6 +605,14 @@ pub mod write {
             }
             // TODO dir_to_sub, dir_entries, tag_to_dir_entry, last_edit, mime_to_dir_entry
             // TODO thumbnails
+            exec_sql_stmt_with_arg(self.conn, "DELETE FROM dir_entries WHERE id = ?1", entry.id)
+                .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(
+                self.conn,
+                "DELETE FROM dir_to_sub WHERE entry_id = ?1",
+                entry.id,
+            )
+            .map_err(|_| DeleteError::Unknown)?;
             Ok(())
         }
 
