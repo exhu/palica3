@@ -511,6 +511,26 @@ pub mod write {
 
             Ok(())
         }
+
+        fn delete_dir_entry_dir(&mut self, entry: DirEntry) {
+            // TODO delete files
+        }
+
+        fn delete_dir_entry_file(&mut self, entry: DirEntry) {
+            // TODO dir_to_sub, dir_entries, tag_to_dir_entry, last_edit, mime_to_dir_entry
+            // TODO thumbnails
+        }
+
+        pub fn delete_dir_entry(&mut self, entry: DirEntry) {
+            let mut tx = Transaction::new(&self.conn);
+            if entry.is_dir {
+                self.delete_dir_entry_dir(entry);
+            } else {
+                self.delete_dir_entry_file(entry);
+            }
+
+            tx.commit();
+        }
     }
 
     /// Either open an existing, or initialize a new database.
