@@ -603,13 +603,30 @@ pub mod write {
                     name: entry.fs_name,
                 });
             }
-            // TODO dir_to_sub, dir_entries, tag_to_dir_entry, last_edit, mime_to_dir_entry
             // TODO thumbnails
             exec_sql_stmt_with_arg(self.conn, "DELETE FROM dir_entries WHERE id = ?1", entry.id)
                 .map_err(|_| DeleteError::Unknown)?;
             exec_sql_stmt_with_arg(
                 self.conn,
                 "DELETE FROM dir_to_sub WHERE entry_id = ?1",
+                entry.id,
+            )
+            .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(
+                self.conn,
+                "DELETE FROM tag_to_dir_entry WHERE dir_entry_id = ?1",
+                entry.id,
+            )
+            .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(
+                self.conn,
+                "DELETE FROM last_edit WHERE dir_entry_id = ?1",
+                entry.id,
+            )
+            .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(
+                self.conn,
+                "DELETE FROM mime_to_dir_entry WHERE dir_entry_id = ?1",
                 entry.id,
             )
             .map_err(|_| DeleteError::Unknown)?;
