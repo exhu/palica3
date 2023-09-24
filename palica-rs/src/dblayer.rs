@@ -58,7 +58,7 @@ impl Drop for Transaction<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Collection {
     pub id: DbId,
     pub coll_name: String,
@@ -68,6 +68,16 @@ pub struct Collection {
 }
 
 impl Collection {
+    fn from_row(row: &sqlite::Row) -> Collection {
+        Collection {
+            id: row.read::<i64, usize>(0),
+            coll_name: row.read::<&str, usize>(1).to_string(),
+            fs_path: row.read::<&str, usize>(2).to_string(),
+            root_id: row.read::<i64, usize>(3),
+            glob_filter_id: row.read::<i64, usize>(4),
+        }
+    }
+
     pub fn table_name() -> &'static str {
         "collections"
     }
@@ -269,7 +279,7 @@ pub mod read {
                 root_id, glob_filter_id FROM collections ORDER BY coll_name",
             )?;
             for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Self::collection_from_row(&row);
+                let c = Collection::from_row(&row);
                 res.push(c);
             }
             Ok(res)
@@ -366,16 +376,6 @@ pub mod read {
             })
         }
 
-        fn collection_from_row(row: &sqlite::Row) -> Collection {
-            Collection {
-                id: row.read::<i64, usize>(0),
-                coll_name: row.read::<&str, usize>(1).to_string(),
-                fs_path: row.read::<&str, usize>(2).to_string(),
-                root_id: row.read::<i64, usize>(3),
-                glob_filter_id: row.read::<i64, usize>(4),
-            }
-        }
-
         pub fn collections_by_fs_path(&self, fs_path: &str) -> DbResult<Vec<Collection>> {
             let mut res: Vec<Collection> = Vec::new();
             let mut prep = self.conn.prepare(
@@ -385,7 +385,7 @@ pub mod read {
             )?;
             prep.bind((1, fs_path))?;
             for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Self::collection_from_row(&row);
+                let c = Collection::from_row(&row);
                 res.push(c);
             }
             Ok(res)
@@ -398,8 +398,23 @@ pub mod read {
             )?;
             prep.bind((1, name))?;
             for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Self::collection_from_row(&row);
+                let c = Collection::from_row(&row);
                 return Ok(Some(c));
+            }
+            Ok(None)
+        }
+
+        pub fn dir_entry_by_id(&self, id: DbId) -> DbResult<Option<DirEntry>> {
+            let mut prep = self.conn.prepare(
+                "SELECT id, fs_name, fs_mod_time,
+                    last_sync_time, is_dir, fs_size FROM dir_entries
+                    WHERE id = ?1",
+            )?;
+            prep.bind((1, id))?;
+            for row in prep.into_iter() {
+                if let row = row? {
+                    return Ok(Some(DirEntry::from_row(&row)));
+                }
             }
             Ok(None)
         }
@@ -461,6 +476,8 @@ pub mod write {
         NotAfile { name: String },
         #[error("Not a directory")]
         NotAdir { name: String },
+        #[error("No root entry")]
+        NoRootEntry,
     }
 
     impl Db<'_> {
@@ -648,7 +665,17 @@ pub mod write {
         }
 
         pub fn delete_collection(&mut self, col: Collection) -> Result<(), DeleteError> {
-            // TODO
+            let mut read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
+            let root = read_db
+                .dir_entry_by_id(col.root_id)
+                .map_err(|_| DeleteError::Unknown)?;
+            if let Some(root_entry) = root {
+                self.delete_dir_entry(root_entry)?;
+            } else {
+                return Err(DeleteError::NoRootEntry);
+            }
+            exec_sql_stmt_with_arg(self.conn, "DELETE FROM collections WHERE id = ?1", col.id)
+                .map_err(|_| DeleteError::Unknown)?;
             Ok(())
         }
     }
@@ -977,5 +1004,58 @@ mod tests {
         assert_eq!(db.max_id(DirEntry::table_name()), 2);
         db.delete_dir_entry(file_entry).unwrap();
         assert_eq!(db.max_id(DirEntry::table_name()), 1);
+    }
+
+    #[test]
+    fn delete_collection() {
+        let conn = write::open_or_make(":memory:").unwrap();
+        let mut db = write::Db::new(&conn).unwrap();
+        let max_id = db.max_id(DirEntry::table_name());
+        assert_eq!(max_id, 0);
+        let mydir_id = max_id + 1;
+        let dir = DirEntry {
+            id: mydir_id,
+            fs_name: "mydir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        };
+        db.create_dir_entry(&dir).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 1);
+
+        let myfile_id = mydir_id + 1;
+
+        let file_entry = DirEntry {
+            id: myfile_id,
+            fs_name: "myfile".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 7,
+        };
+        db.create_dir_entry(&file_entry).unwrap();
+
+        db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 2);
+
+        let col = db
+            .create_collection("sample_col", "path/aa", mydir_id, 1)
+            .unwrap();
+
+        let read_db = super::read::Db::new(db.conn).unwrap();
+
+        assert_eq!(
+            read_db.collection_by_name("sample_col").unwrap().unwrap(),
+            col
+        );
+        db.delete_collection(col).unwrap();
+        assert_eq!(
+            read_db.collection_by_name("sample_col").unwrap().is_none(),
+            true
+        );
+        assert_eq!(db.max_id(DirEntry::table_name()), 0);
     }
 }
