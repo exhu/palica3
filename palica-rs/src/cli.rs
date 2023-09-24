@@ -1,4 +1,5 @@
 use anyhow::Context;
+use anyhow::Error;
 
 /*
     palica media catalogue program
@@ -116,7 +117,9 @@ pub fn collection_tree(db_file_name: &str, col_name: &str) -> anyhow::Result<()>
     let mut rdb = read::Db::new(&conn)?;
     let col = rdb.collection_by_name(col_name)?;
     if col.is_none() {
-        return Err(anyhow::Error::msg("No such collection."));
+        return Err(anyhow::Error::msg(format!(
+            "No such collection: '{col_name}'!"
+        )));
     }
     let col = col.unwrap();
 
@@ -186,13 +189,22 @@ pub fn collection_remove(db_file_name: &str, col_name: &str) -> anyhow::Result<(
     let rdb = read::Db::new(&conn)?;
     let col = rdb.collection_by_name(col_name)?;
     if col.is_none() {
-        return Err(anyhow::Error::msg("No such collection."));
+        return Err(anyhow::Error::msg(format!(
+            "No such collection: '{col_name}'!"
+        )));
     }
     let col = col.unwrap();
     let col_name = col.coll_name.clone();
 
-    let wdb = write::Db::new(&conn)?;
-    wdb.delete_collection(col)?;
-    println!("Deleted collection '{col_name}'.");
-    Ok(())
+    match ask_confirmation(&format!("Delete collection {col_name}?")) {
+        Ok(YesNo::Yes) => {
+            let wdb = write::Db::new(&conn)?;
+            wdb.delete_collection(col)?;
+            println!("Deleted collection '{col_name}'.");
+            return Ok(());
+        }
+        Err(e) => return Err(e.into()),
+        _ => (),
+    };
+    Err(Error::msg("Canceled."))
 }
