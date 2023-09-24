@@ -48,6 +48,7 @@ pub struct CollectionAdd {
     pub name: String,
     pub path: String,
     pub filter_id: DbId,
+    pub dry: bool,
 }
 
 fn check_with_existing_paths(rdb: &read::Db, fs_path: &str) -> anyhow::Result<()> {
@@ -75,6 +76,11 @@ fn check_with_existing_paths(rdb: &read::Db, fs_path: &str) -> anyhow::Result<()
 pub fn collection_add(args: CollectionAdd) -> anyhow::Result<()> {
     // TODO check yes for create new db
     // TODO check for existing col
+    // TODO implement dry
+    // TODO only open existing db
+
+    assert_eq!(args.dry, false, "not supported");
+
     let conn = write::open_or_make(&args.db_file_name)?;
     let rdb = read::Db::new(&conn)?;
     let norm_path = crate::fslayer::read::normalized_abspath(&args.path);

@@ -22,6 +22,8 @@ use palica::dblayer;
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
 enum Command {
+    #[command(about = "Initialize a new database.")]
+    CreateDb(CreateDbCommand),
     #[command(about = "Add a new collection.")]
     Add(AddCommand),
     #[command(about = "List collections.")]
@@ -38,10 +40,16 @@ enum Command {
 struct AddCommand {
     #[arg(long = "db", help = "Database filename.")]
     pub db_file_name: String,
-    #[arg(long = "verbose", help = "Database filename.")]
-    pub verbose: Option<bool>,
+    #[arg(long = "verbose", short = 'v', help = "Print more info.")]
+    pub verbose: bool,
     #[arg(long = "yes", help = "Do not ask for confirmations.")]
-    pub yes: Option<bool>,
+    pub yes: bool,
+    #[arg(
+        long = "dry",
+        short = 'n',
+        help = "Only display what would be done, no modifications."
+    )]
+    pub dry: bool,
     #[arg(help = "Collection name.")]
     pub name: String,
     #[arg(help = "Path to a directory.")]
@@ -70,17 +78,21 @@ struct RemoveCommand {}
 #[derive(clap::Args, Debug)]
 struct FiltersCommand {}
 
+#[derive(clap::Args, Debug)]
+struct CreateDbCommand {}
+
 fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
     println!("{:?}", parsed);
     match parsed {
         Command::Add(c) => cli::collection_add(cli::CollectionAdd {
             db_file_name: c.db_file_name,
-            verbose: c.verbose.unwrap_or(false),
-            yes: c.yes.unwrap_or(false),
+            verbose: c.verbose,
+            yes: c.yes,
             name: c.name,
             path: c.path,
             filter_id: c.filter_id.unwrap_or(dblayer::DEFAULT_FILTER_ID),
+            dry: c.dry,
         })?,
         Command::List(c) => cli::collection_list(&c.db_file_name)?,
         Command::Tree(c) => cli::collection_tree(&c.db_file_name, &c.name)?,
