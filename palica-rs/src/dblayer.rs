@@ -633,6 +633,8 @@ pub mod write {
             Ok(())
         }
 
+        /// Deletes a directory (and it's subdirectories/files) or a file, and
+        /// all associated data in other tables.
         pub fn delete_dir_entry(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
             let mut tx = Transaction::new(&self.conn);
             if entry.is_dir {
@@ -642,6 +644,11 @@ pub mod write {
             }
 
             tx.commit();
+            Ok(())
+        }
+
+        pub fn delete_collection(&mut self, col: Collection) -> Result<(), DeleteError> {
+            // TODO
             Ok(())
         }
     }
@@ -905,7 +912,31 @@ mod tests {
 
         db.map_dir_entry_to_parent_dir(myfile_id, mydir_id).unwrap();
 
-        assert_eq!(db.max_id(DirEntry::table_name()), 2);
+        let subdir_id = myfile_id + 1;
+        db.create_dir_entry(&DirEntry {
+            id: subdir_id,
+            fs_name: "mysubdir".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: true,
+            fs_size: 0,
+        })
+        .unwrap();
+        db.map_dir_entry_to_parent_dir(subdir_id, mydir_id).unwrap();
+        let subfile_id = subdir_id + 1;
+        db.create_dir_entry(&DirEntry {
+            id: subfile_id,
+            fs_name: "myfile-inside".to_owned(),
+            fs_mod_time: 1,
+            last_sync_time: 2,
+            is_dir: false,
+            fs_size: 0,
+        })
+        .unwrap();
+        db.map_dir_entry_to_parent_dir(subfile_id, subdir_id)
+            .unwrap();
+
+        assert_eq!(db.max_id(DirEntry::table_name()), 4);
         db.delete_dir_entry(dir).unwrap();
         assert_eq!(db.max_id(DirEntry::table_name()), 0);
     }
