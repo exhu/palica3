@@ -94,7 +94,7 @@ mod tests {
     use dblayer::write;
     #[test]
     fn new_col() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
         let col = new_collection(
             &mut db,

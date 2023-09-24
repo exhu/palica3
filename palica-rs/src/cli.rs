@@ -81,7 +81,7 @@ pub fn collection_add(args: CollectionAdd) -> anyhow::Result<()> {
 
     assert_eq!(args.dry, false, "not supported");
 
-    let conn = write::open_or_make(&args.db_file_name)?;
+    let conn = read::open_existing(&args.db_file_name)?;
     let rdb = read::Db::new(&conn)?;
     let norm_path = crate::fslayer::read::normalized_abspath(&args.path);
     check_with_existing_paths(&rdb, &norm_path)?;

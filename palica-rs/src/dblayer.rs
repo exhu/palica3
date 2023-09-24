@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 /*
     palica media catalogue program
     Copyright (C) 2023 Yury Benesh
@@ -170,17 +172,33 @@ pub struct SettingValue {
     pub value: String,
 }
 
-/*
 #[derive(Error, Debug)]
 pub enum DbError {
-    #[error("cannot access db")]
-    Unknown,
+    #[error("sqlite error: {error}")]
+    SqliteError { error: sqlite::Error },
+    #[error("db file does not exist: {name}")]
+    NoDbFile { name: String },
+    #[error("db file schema is not compatible: {name}")]
+    WrongDbSchema { name: String },
+    #[error("io error: {error}")]
+    IoError { error: std::io::Error },
+    #[error("db file aready exists: {name}")]
+    AlreadyExists { name: String },
 }
-*/
 
-//pub type DbResult<T> = Result<T, DbError>;
-// TODO use thiserror and meaningful errors
-pub type DbResult<T> = anyhow::Result<T>;
+impl From<std::io::Error> for DbError {
+    fn from(error: std::io::Error) -> Self {
+        DbError::IoError { error: error }
+    }
+}
+
+impl From<sqlite::Error> for DbError {
+    fn from(error: sqlite::Error) -> Self {
+        DbError::SqliteError { error }
+    }
+}
+
+pub type DbResult<T> = Result<T, DbError>;
 
 fn complete_statement(stmt: &mut sqlite::Statement) -> sqlite::Result<()> {
     loop {
@@ -221,15 +239,6 @@ pub mod read {
 
     use super::*;
     use crate::glob_filter::{Filter, FilterItem, Pattern};
-    use thiserror::Error;
-
-    #[derive(Error, Debug)]
-    pub enum DbError {
-        #[error("db file does not exist")]
-        NoDbFile,
-        #[error("db file schema is not compatible")]
-        WrongDbSchema,
-    }
 
     pub fn check_database_validity(_conn: &sqlite::Connection) -> bool {
         // TODO check version, tables etc.
@@ -240,15 +249,23 @@ pub mod read {
     pub fn open_existing(fname: &str) -> DbResult<sqlite::Connection> {
         use std::path::Path;
 
-        let existing = Path::new(fname).exists();
+        let existing = if fname == ":memory:" {
+            false
+        } else {
+            Path::new(fname).exists()
+        };
 
         if !existing {
-            return Err(DbError::NoDbFile.into());
+            return Err(DbError::NoDbFile {
+                name: fname.to_owned(),
+            });
         }
 
         let conn = sqlite::Connection::open(fname)?;
         if !check_database_validity(&conn) {
-            return Err(DbError::WrongDbSchema.into());
+            return Err(DbError::WrongDbSchema {
+                name: fname.to_owned(),
+            });
         }
 
         Ok(conn)
@@ -459,24 +476,38 @@ pub mod write {
         }
     }
 
+    #[derive(Error, Debug)]
+    pub enum DeleteError {
+        #[error("Db error: {error}")]
+        DbError { error: DbError },
+        #[error("Sqlite error: {error}")]
+        SqliteError { error: sqlite::Error },
+        #[error("Not a file: {name}")]
+        NotAfile { name: String },
+        #[error("Not a directory: {name}")]
+        NotAdir { name: String },
+        #[error("No root entry")]
+        NoRootEntry,
+    }
+
+    impl From<sqlite::Error> for DeleteError {
+        fn from(error: sqlite::Error) -> Self {
+            DeleteError::SqliteError { error }
+        }
+    }
+
+    impl From<DbError> for DeleteError {
+        fn from(error: DbError) -> Self {
+            DeleteError::DbError { error }
+        }
+    }
+
+    pub type DeleteResult<T> = Result<T, DeleteError>;
+
     pub struct Db<'a> {
         pub conn: &'a sqlite::Connection,
         create_dir: sqlite::Statement<'a>,
         map_dir: sqlite::Statement<'a>,
-    }
-
-    use thiserror::Error;
-
-    #[derive(Error, Debug)]
-    pub enum DeleteError {
-        #[error("unknown")]
-        Unknown,
-        #[error("Not a file")]
-        NotAfile { name: String },
-        #[error("Not a directory")]
-        NotAdir { name: String },
-        #[error("No root entry")]
-        NoRootEntry,
     }
 
     impl Db<'_> {
@@ -575,7 +606,7 @@ pub mod write {
         }
 
         // TODO provide text message to Unknown errors
-        fn delete_dir_entry_dir(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
+        fn delete_dir_entry_dir(&mut self, entry: DirEntry) -> DeleteResult<()> {
             if !entry.is_dir {
                 return Err(DeleteError::NotAfile {
                     name: entry.fs_name,
@@ -583,11 +614,9 @@ pub mod write {
             }
             let mut subdirs = Vec::<DirEntry>::new();
             subdirs.push(entry);
-            let mut read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
+            let mut read_db = super::read::Db::new(self.conn)?;
             while let Some(subdir) = subdirs.pop() {
-                let contents = read_db
-                    .enum_dir_entries(subdir.id)
-                    .map_err(|_| DeleteError::Unknown)?;
+                let contents = read_db.enum_dir_entries(subdir.id)?;
                 for item in contents {
                     if item.is_dir {
                         subdirs.push(item);
@@ -600,58 +629,51 @@ pub mod write {
                     self.conn,
                     "DELETE FROM dir_entries WHERE id = ?1",
                     subdir.id,
-                )
-                .map_err(|_| DeleteError::Unknown)?;
+                )?;
 
                 exec_sql_stmt_with_arg(
                     self.conn,
                     "DELETE FROM dir_to_sub WHERE directory_id = ?1 OR entry_id = ?1",
                     subdir.id,
-                )
-                .map_err(|_| DeleteError::Unknown)?;
+                )?;
             }
             Ok(())
         }
 
-        fn delete_dir_entry_file(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
+        fn delete_dir_entry_file(&mut self, entry: DirEntry) -> DeleteResult<()> {
             if entry.is_dir {
                 return Err(DeleteError::NotAfile {
                     name: entry.fs_name,
                 });
             }
             // TODO thumbnails
-            exec_sql_stmt_with_arg(self.conn, "DELETE FROM dir_entries WHERE id = ?1", entry.id)
-                .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(self.conn, "DELETE FROM dir_entries WHERE id = ?1", entry.id)?;
             exec_sql_stmt_with_arg(
                 self.conn,
                 "DELETE FROM dir_to_sub WHERE entry_id = ?1",
                 entry.id,
-            )
-            .map_err(|_| DeleteError::Unknown)?;
+            )?;
             exec_sql_stmt_with_arg(
                 self.conn,
                 "DELETE FROM tag_to_dir_entry WHERE dir_entry_id = ?1",
                 entry.id,
-            )
-            .map_err(|_| DeleteError::Unknown)?;
+            )?;
             exec_sql_stmt_with_arg(
                 self.conn,
                 "DELETE FROM last_edit WHERE dir_entry_id = ?1",
                 entry.id,
-            )
-            .map_err(|_| DeleteError::Unknown)?;
+            )?;
             exec_sql_stmt_with_arg(
                 self.conn,
                 "DELETE FROM mime_to_dir_entry WHERE dir_entry_id = ?1",
                 entry.id,
-            )
-            .map_err(|_| DeleteError::Unknown)?;
+            )?;
             Ok(())
         }
 
         /// Deletes a directory (and it's subdirectories/files) or a file, and
         /// all associated data in other tables.
-        pub fn delete_dir_entry(&mut self, entry: DirEntry) -> Result<(), DeleteError> {
+        pub fn delete_dir_entry(&mut self, entry: DirEntry) -> DeleteResult<()> {
             let mut tx = Transaction::new(&self.conn);
             if entry.is_dir {
                 self.delete_dir_entry_dir(entry)?;
@@ -663,25 +685,20 @@ pub mod write {
             Ok(())
         }
 
-        pub fn delete_collection(&mut self, col: Collection) -> Result<(), DeleteError> {
-            let read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
-            let root = read_db
-                .dir_entry_by_id(col.root_id)
-                .map_err(|_| DeleteError::Unknown)?;
+        pub fn delete_collection(&mut self, col: Collection) -> DeleteResult<()> {
+            let read_db = super::read::Db::new(self.conn)?;
+            let root = read_db.dir_entry_by_id(col.root_id)?;
             if let Some(root_entry) = root {
                 self.delete_dir_entry(root_entry)?;
             } else {
                 return Err(DeleteError::NoRootEntry);
             }
-            exec_sql_stmt_with_arg(self.conn, "DELETE FROM collections WHERE id = ?1", col.id)
-                .map_err(|_| DeleteError::Unknown)?;
+            exec_sql_stmt_with_arg(self.conn, "DELETE FROM collections WHERE id = ?1", col.id)?;
             Ok(())
         }
     }
 
-    /// Either open an existing, or initialize a new database.
-    pub fn open_or_make(fname: &str) -> DbResult<sqlite::Connection> {
-        use super::read::{check_database_validity, DbError};
+    pub fn create_new(fname: &str) -> DbResult<sqlite::Connection> {
         use std::fs::read_to_string;
         use std::path::Path;
 
@@ -690,25 +707,18 @@ pub mod write {
         } else {
             Path::new(fname).exists()
         };
+
+        if existing {
+            return Err(DbError::AlreadyExists {
+                name: fname.to_owned(),
+            });
+        }
         let conn = sqlite::Connection::open(fname)?;
 
-        if !existing {
-            let schema = "sql/schema1.sql";
-            eprintln!("reading schema {}", schema);
-            let sql = read_to_string(schema)?;
-            match conn.execute(sql) {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("failed {:?}", e);
-                    return Err(e.into());
-                }
-            }
-        } else {
-            if !check_database_validity(&conn) {
-                return Err(DbError::WrongDbSchema.into());
-            }
-        }
-
+        let schema = "sql/schema1.sql";
+        eprintln!("reading schema {}", schema);
+        let sql = read_to_string(schema)?;
+        conn.execute(sql)?;
         Ok(conn)
     }
 }
@@ -718,7 +728,7 @@ mod tests {
     use super::*;
     #[test]
     fn open_and_make() {
-        let r = write::open_or_make(":memory:");
+        let r = write::create_new(":memory:");
         match r {
             Ok(_) => (),
             Err(_) => panic!("failed to create db"),
@@ -727,7 +737,7 @@ mod tests {
 
     #[test]
     fn create_dir_and_map() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
 
         let mut db = write::Db::new(&conn).unwrap();
 
@@ -765,7 +775,7 @@ mod tests {
 
     #[test]
     fn create_collection() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
         let col = db.create_collection("myname", "mypath", 1, 1).unwrap();
@@ -783,14 +793,14 @@ mod tests {
             remove_file(temp_filename).unwrap();
         }
 
-        write::open_or_make(&temp_filename).unwrap();
+        write::create_new(&temp_filename).unwrap();
         read::open_existing(&temp_filename).unwrap();
         remove_file(temp_filename).unwrap();
     }
 
     #[test]
     fn enum_collections() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
 
         let db = write::Db::new(&conn).unwrap();
         let _col = db.create_collection("myname", "mypath", 1, 1).unwrap();
@@ -806,7 +816,7 @@ mod tests {
 
     #[test]
     fn enum_dir() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
 
         let mut db = write::Db::new(&conn).unwrap();
 
@@ -885,7 +895,7 @@ mod tests {
 
     #[test]
     fn glob_filter_by_id_test() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let db = read::Db::new(&conn).unwrap();
 
         let mut default_filter = db.glob_filter_by_id(1).unwrap();
@@ -896,7 +906,7 @@ mod tests {
 
     #[test]
     fn col_by_name() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let db = write::Db::new(&conn).unwrap();
         let _col = db.create_collection("cola", "mypath", 1, 1).unwrap();
         let dbread = read::Db::new(&conn).unwrap();
@@ -907,7 +917,7 @@ mod tests {
 
     #[test]
     fn delete_dir() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
         let max_id = db.max_id(DirEntry::table_name());
         assert_eq!(max_id, 0);
@@ -969,7 +979,7 @@ mod tests {
 
     #[test]
     fn delete_file() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
         let max_id = db.max_id(DirEntry::table_name());
         assert_eq!(max_id, 0);
@@ -1007,7 +1017,7 @@ mod tests {
 
     #[test]
     fn delete_collection() {
-        let conn = write::open_or_make(":memory:").unwrap();
+        let conn = write::create_new(":memory:").unwrap();
         let mut db = write::Db::new(&conn).unwrap();
         let max_id = db.max_id(DirEntry::table_name());
         assert_eq!(max_id, 0);
