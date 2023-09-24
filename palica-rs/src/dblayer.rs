@@ -184,6 +184,8 @@ pub enum DbError {
     IoError { error: std::io::Error },
     #[error("db file aready exists: {name}")]
     AlreadyExists { name: String },
+    #[error("filter to glob integrity error, filter: {filter_id}, glob: {glob_id}")]
+    FilterToGlobIntegrityError { filter_id: DbId, glob_id: DbId },
 }
 
 impl From<std::io::Error> for DbError {
@@ -295,8 +297,8 @@ pub mod read {
                 "SELECT id, coll_name, fs_path,
                 root_id, glob_filter_id FROM collections ORDER BY coll_name",
             )?;
-            for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Collection::from_row(&row);
+            for row in prep.into_iter() {
+                let c = Collection::from_row(&row?);
                 res.push(c);
             }
             Ok(res)
@@ -305,14 +307,13 @@ pub mod read {
         /// returns items sorted by name, directories first
         pub fn enum_dir_entries(&mut self, parent_id: DbId) -> DbResult<Vec<DirEntry>> {
             self.list_dir.bind((1, parent_id))?;
-            let res = self
+            let res: DbResult<Vec<DirEntry>> = self
                 .list_dir
                 .iter()
-                .map(|r| r.unwrap())
-                .map(|r| DirEntry::from_row(&r))
+                .map(|r| Ok(DirEntry::from_row(&r?)))
                 .collect();
             self.list_dir.reset()?;
-            Ok(res)
+            res
         }
 
         pub fn enum_glob_filters(&self) -> DbResult<Vec<GlobFilter>> {
@@ -320,10 +321,9 @@ pub mod read {
                 .conn
                 .prepare("SELECT id, name FROM glob_filters ORDER BY name")?
                 .iter()
-                .map(|r| r.unwrap())
-                .map(|r| GlobFilter::from_row(&r))
+                .map(|r| Ok(GlobFilter::from_row(&r?)))
                 .collect();
-            Ok(res)
+            res
         }
 
         pub fn enum_glob_patterns(&self) -> DbResult<Vec<GlobPattern>> {
@@ -331,10 +331,9 @@ pub mod read {
                 .conn
                 .prepare("SELECT id, regexp FROM glob_patterns ORDER BY regexp")?
                 .iter()
-                .map(|r| r.unwrap())
-                .map(|r| GlobPattern::from_row(&r))
+                .map(|r| Ok(GlobPattern::from_row(&r?)))
                 .collect();
-            Ok(res)
+            res
         }
 
         /// returns sorted by position
@@ -346,10 +345,9 @@ pub mod read {
             stmt.bind((1, filter_id))?;
             let res = stmt
                 .iter()
-                .map(|r| r.unwrap())
-                .map(|r| GlobFilterToPattern::from_row(&r))
+                .map(|r| Ok(GlobFilterToPattern::from_row(&r?)))
                 .collect();
-            Ok(res)
+            res
         }
 
         pub fn glob_filter_by_id(&self, filter_id: DbId) -> DbResult<Filter> {
@@ -381,9 +379,12 @@ pub mod read {
             // build filter items
             for filter_pat in dbfilter_patterns {
                 filter_items.push(FilterItem {
-                    pattern_index: *pattern_id_to_index
-                        .get(&filter_pat.glob_pattern_id)
-                        .unwrap(),
+                    pattern_index: *pattern_id_to_index.get(&filter_pat.glob_pattern_id).ok_or(
+                        DbError::FilterToGlobIntegrityError {
+                            filter_id: filter_id,
+                            glob_id: filter_pat.glob_pattern_id,
+                        },
+                    )?,
                     include: filter_pat.include,
                 });
             }
@@ -401,8 +402,8 @@ pub mod read {
                 ORDER BY coll_name",
             )?;
             prep.bind((1, fs_path))?;
-            for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Collection::from_row(&row);
+            for row in prep.into_iter() {
+                let c = Collection::from_row(&row?);
                 res.push(c);
             }
             Ok(res)
@@ -414,8 +415,8 @@ pub mod read {
                 root_id, glob_filter_id FROM collections WHERE coll_name=?1",
             )?;
             prep.bind((1, name))?;
-            for row in prep.into_iter().map(|row| row.unwrap()) {
-                let c = Collection::from_row(&row);
+            for row in prep.into_iter() {
+                let c = Collection::from_row(&row?);
                 return Ok(Some(c));
             }
             Ok(None)
