@@ -606,7 +606,7 @@ pub mod write {
             Ok(())
         }
 
-        fn delete_dir_entry_dir(&mut self, entry: DirEntry) -> DeleteResult<()> {
+        fn delete_dir_entry_dir(&self, entry: DirEntry) -> DeleteResult<()> {
             if !entry.is_dir {
                 return Err(DeleteError::NotAfile {
                     name: entry.fs_name,
@@ -640,7 +640,7 @@ pub mod write {
             Ok(())
         }
 
-        fn delete_dir_entry_file(&mut self, entry: DirEntry) -> DeleteResult<()> {
+        fn delete_dir_entry_file(&self, entry: DirEntry) -> DeleteResult<()> {
             if entry.is_dir {
                 return Err(DeleteError::NotAfile {
                     name: entry.fs_name,
@@ -673,7 +673,7 @@ pub mod write {
 
         /// Deletes a directory (and it's subdirectories/files) or a file, and
         /// all associated data in other tables.
-        pub fn delete_dir_entry(&mut self, entry: DirEntry) -> DeleteResult<()> {
+        pub fn delete_dir_entry(&self, entry: DirEntry) -> DeleteResult<()> {
             let mut tx = Transaction::new(&self.conn);
             if entry.is_dir {
                 self.delete_dir_entry_dir(entry)?;
@@ -685,7 +685,7 @@ pub mod write {
             Ok(())
         }
 
-        pub fn delete_collection(&mut self, col: Collection) -> DeleteResult<()> {
+        pub fn delete_collection(&self, col: Collection) -> DeleteResult<()> {
             let read_db = super::read::Db::new(self.conn)?;
             let root = read_db.dir_entry_by_id(col.root_id)?;
             if let Some(root_entry) = root {

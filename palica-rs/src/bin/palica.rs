@@ -73,7 +73,12 @@ struct TreeCommand {
 }
 
 #[derive(clap::Args, Debug)]
-struct RemoveCommand {}
+struct RemoveCommand {
+    #[arg(long = "db", help = "Database filename.")]
+    pub db_file_name: String,
+    #[arg(help = "Collection name.")]
+    pub name: String,
+}
 
 #[derive(clap::Args, Debug)]
 struct FiltersCommand {}
@@ -100,6 +105,7 @@ fn main() -> anyhow::Result<()> {
         Command::List(c) => cli::collection_list(&c.db_file_name)?,
         Command::Tree(c) => cli::collection_tree(&c.db_file_name, &c.name)?,
         Command::CreateDb(c) => cli::create_db(&c.db_file_name)?,
+        Command::Remove(c) => cli::collection_remove(&c.db_file_name, &c.name)?,
         // TODO
         _ => todo!(),
     };

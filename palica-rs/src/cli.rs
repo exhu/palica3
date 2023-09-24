@@ -34,8 +34,8 @@ fn ask_confirmation(msg: &str) -> Result<YesNo, std::io::Error> {
         let mut answer = String::new();
         std::io::stdin().read_line(&mut answer)?;
         match answer.as_str() {
-            "y" | "Y" => return Ok(YesNo::Yes),
-            "n" | "N" => return Ok(YesNo::No),
+            "y\n" | "Y\n" => return Ok(YesNo::Yes),
+            "n\n" | "N\n" => return Ok(YesNo::No),
             _ => (),
         }
     }
@@ -178,5 +178,21 @@ struct TreeItem {
 
 pub fn create_db(db_file_name: &str) -> anyhow::Result<()> {
     write::create_new(db_file_name)?;
+    Ok(())
+}
+
+pub fn collection_remove(db_file_name: &str, col_name: &str) -> anyhow::Result<()> {
+    let conn = read::open_existing(db_file_name)?;
+    let rdb = read::Db::new(&conn)?;
+    let col = rdb.collection_by_name(col_name)?;
+    if col.is_none() {
+        return Err(anyhow::Error::msg("No such collection."));
+    }
+    let col = col.unwrap();
+    let col_name = col.coll_name.clone();
+
+    let wdb = write::Db::new(&conn)?;
+    wdb.delete_collection(col)?;
+    println!("Deleted collection '{col_name}'.");
     Ok(())
 }
