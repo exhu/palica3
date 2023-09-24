@@ -606,7 +606,6 @@ pub mod write {
             Ok(())
         }
 
-        // TODO provide text message to Unknown errors
         fn delete_dir_entry_dir(&mut self, entry: DirEntry) -> DeleteResult<()> {
             if !entry.is_dir {
                 return Err(DeleteError::NotAfile {

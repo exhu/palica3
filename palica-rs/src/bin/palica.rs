@@ -79,7 +79,10 @@ struct RemoveCommand {}
 struct FiltersCommand {}
 
 #[derive(clap::Args, Debug)]
-struct CreateDbCommand {}
+struct CreateDbCommand {
+    #[arg(help = "Database file.")]
+    pub db_file_name: String,
+}
 
 fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
@@ -96,6 +99,7 @@ fn main() -> anyhow::Result<()> {
         })?,
         Command::List(c) => cli::collection_list(&c.db_file_name)?,
         Command::Tree(c) => cli::collection_tree(&c.db_file_name, &c.name)?,
+        Command::CreateDb(c) => cli::create_db(&c.db_file_name)?,
         // TODO
         _ => todo!(),
     };

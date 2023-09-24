@@ -175,3 +175,8 @@ struct TreeItem {
     pub name: String,
     pub size: i64,
 }
+
+pub fn create_db(db_file_name: &str) -> anyhow::Result<()> {
+    write::create_new(db_file_name)?;
+    Ok(())
+}
