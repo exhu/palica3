@@ -231,7 +231,7 @@ pub mod read {
         WrongDbSchema,
     }
 
-    pub fn check_database_validity(conn: &sqlite::Connection) -> bool {
+    pub fn check_database_validity(_conn: &sqlite::Connection) -> bool {
         // TODO check version, tables etc.
         true
     }
@@ -412,9 +412,8 @@ pub mod read {
             )?;
             prep.bind((1, id))?;
             for row in prep.into_iter() {
-                if let row = row? {
-                    return Ok(Some(DirEntry::from_row(&row)));
-                }
+                let row = row?;
+                return Ok(Some(DirEntry::from_row(&row)));
             }
             Ok(None)
         }
@@ -665,7 +664,7 @@ pub mod write {
         }
 
         pub fn delete_collection(&mut self, col: Collection) -> Result<(), DeleteError> {
-            let mut read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
+            let read_db = super::read::Db::new(self.conn).map_err(|_| DeleteError::Unknown)?;
             let root = read_db
                 .dir_entry_by_id(col.root_id)
                 .map_err(|_| DeleteError::Unknown)?;
