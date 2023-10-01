@@ -34,6 +34,10 @@ enum Command {
     Remove(RemoveCommand),
     #[command(about = "Display file path (glob) filters.")]
     Filters(FiltersCommand),
+    #[command(about = "Read tags from files and sidecars.")]
+    ReadTags(ReadTagsCommand),
+    #[command(about = "Write tags from db to sidecars.")]
+    WriteTags(WriteTagsCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -82,6 +86,12 @@ struct RemoveCommand {
 
 #[derive(clap::Args, Debug)]
 struct FiltersCommand {}
+
+#[derive(clap::Args, Debug)]
+struct ReadTagsCommand {}
+
+#[derive(clap::Args, Debug)]
+struct WriteTagsCommand {}
 
 #[derive(clap::Args, Debug)]
 struct CreateDbCommand {
