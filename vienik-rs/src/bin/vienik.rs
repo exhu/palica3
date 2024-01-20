@@ -45,5 +45,6 @@ fn main() -> anyhow::Result<()> {
         Command::PlainToRich(cmd) => println!("command! {:?}", cmd),
         Command::RichToPlain(cmd) => println!("command! {:?}", cmd),
     }
+    
     Ok(())
 }

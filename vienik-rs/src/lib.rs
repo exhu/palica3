@@ -1,18 +1,7 @@
-pub struct RichFileList {
-    pub files: Vec<FileListItem>,
-}
+pub mod rich;
+pub use rich::*;
 
-pub struct FileListItem {
-    /// Generally absolute path, but if used as metadata (_tags.toml)
-    /// in directories, then must be a relative path to the path to the
-    /// metadata TOML itself.
-    pub path: String,
-    pub tags: Vec<Tag>,
-}
 
-pub struct Tag {
-    pub name: String,
-}
 
 pub fn ls_command(path: Option<String>) -> anyhow::Result<()>{
     use std::process::Command;
