@@ -23,7 +23,8 @@ software.
 * GUI with image previews to visually operate on lists.
 
 == Use case for image processing
-* Build a rich file list
+* Use 'fd -a' to build a plain text file list with absolute paths.
+* Build a rich file list from it.
 * Setup a filter to select only JPEGs
 * Sort by date
 * Iterate visually via GUI and attach tags to each file
