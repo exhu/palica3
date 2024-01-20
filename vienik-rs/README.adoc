@@ -21,6 +21,8 @@ programs for processing.
 * Generate temporary symbolic links to browse selected lists with third-party
 software.
 * GUI with image previews to visually operate on lists.
+* Associated files feature, e.g. assign tags to .xmp and .orf/.raw when tag is
+assigned to jpeg.
 
 == Use case for image processing
 * Use 'fd -a' to build a plain text file list with absolute paths.
