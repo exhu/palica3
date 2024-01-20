@@ -121,3 +121,11 @@ sort="date-new-first"
 
 ----
 
+== Metadata files in directories
+A file "_tags.toml" contains the file list for only files in the same directory,
+and paths are relative, i.e. contain only the file name itself.
+
+.Commands to manage such files
+* Create
+* Remove non-existing files from list
+
