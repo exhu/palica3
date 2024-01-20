@@ -39,12 +39,11 @@ fn main() -> anyhow::Result<()> {
     println!("{:?}", parsed);
     match parsed {
         Command::Ls(cmd) => {
-            println!("{:?}", cmd);
             ls_command(cmd.path)?;
         }
-        Command::PlainToRich(cmd) => println!("command! {:?}", cmd),
+        Command::PlainToRich(cmd) => plain_to_rich_command(cmd.plain_file, cmd.toml_file)?,
         Command::RichToPlain(cmd) => println!("command! {:?}", cmd),
     }
-    
+
     Ok(())
 }
