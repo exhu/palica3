@@ -1,0 +1,122 @@
+= Generic file management tools for fast sorting, filtering, tagging documents
+(C) 2023 Yury Benesh
+
+== Overview
+Distributed under GPLv3+ without any warranty, see link:../COPYING[].
+
+A plain-text based toolset to collect files into lists, lists with tags,
+filter by saved filters, sort by saved sort profiles, iteratively label,
+preview, and process. Generated metadata is meant to be easily passed to other
+programs for processing.
+
+== Functions
+
+* Build a plain text file containing a file list (one path by line).
+* Build rich (TOML) format file lists to enable labeling files with metadata
+(tags).
+* Export rich file lists to plain ones to be used with other software/bash.
+* Allow complex filter and sorting processing.
+* Read saved file list and filter it out and sort with saved profiles.
+* Operate on rich format file lists, filter by tags.
+* Generate temporary symbolic links to browse selected lists with third-party
+software.
+* GUI with image previews to visually operate on lists.
+
+== Use case for image processing
+* Build a rich file list
+* Setup a filter to select only JPEGs
+* Sort by date
+* Iterate visually via GUI and attach tags to each file
+* Filter the rich file list by tags, and produce symbolic links to browse with
+favourite image viewer.
+* Tag files to delete, generate such file list, export to plain text, rm for
+each.
+
+== Sample metadata file
+
+[source,toml]
+----
+[[files]]
+path="/mnt/asdasdsad/file.jpeg"
+tags=["abc", "def", "aaa"]
+
+[[files]]
+path="/mnt/asdasdsad/other-file.jpeg"
+tags=[]
+
+[[files]]
+path="/mnt/asdasdsad/notags-file.jpeg"
+
+----
+
+== Sample filter file/view file section
+
+[source,toml]
+----
+# select files which do not have tags added to them yet
+[[filters]]
+filter="untagged"
+
+# and from those untagged select only those containing specified text:
+[[filters]]
+filter="name-contains"
+value="some-word-or-part-of-word"
+
+[[filters]]
+filter="path-contains"
+value="some-word-or-part-of-word"
+
+[[filters]]
+filter="full-path-contains"
+value="some-word-or-part-of-word"
+
+# and from those select only from the specified day
+[[filters]]
+filter="date-is"
+date=1979-05-27
+
+# or from from the specified period
+[[filters]]
+filter="date-between"
+start=1979-05-27
+end=1979-05-28
+
+# or from the specified day and later (the days after the specified day to now)
+[[filters]]
+filter="date-newer"
+from=1979-05-27
+
+# or from the specified day and earlier (the days preceeding the specified day)
+[[filters]]
+filter="date-older"
+from=1979-05-27
+
+----
+
+== Sample sorting file/view file section
+
+[source,toml]
+----
+# sort by file name only
+[[sorting]]
+sort="base-name"
+
+# sort by the full path string including the file name
+[[sorting]]
+sort="full-path"
+
+# by file size, descending
+[[sorting]]
+sort="size-big-first"
+
+[[sorting]]
+sort="size-small-first"
+
+[[sorting]]
+sort="date-old-first"
+
+[[sorting]]
+sort="date-new-first"
+
+----
+

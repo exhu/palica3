@@ -1,4 +1,4 @@
-= Photo/video collection management tool
+= Photo/video collection management tools
 (C) 2023 Yury Benesh
 
 == Overview
@@ -6,6 +6,10 @@ Distributed under GPLv3+ without any warranty, see link:COPYING[].
 
 Usable command line tool, and optionally gui. Collects all files, but
 primary usage is for image and video files on removable storage.
+
+.Programs
+* palica-rs -- database management tools
+* vienik-rs -- file management tools
 
 == TODO
 * collection
