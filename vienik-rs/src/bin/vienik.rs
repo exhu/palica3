@@ -1,4 +1,5 @@
 use clap::Parser;
+use vienik_rs::*;
 
 #[derive(Parser, Debug)]
 #[command(version, about, author)]
@@ -15,7 +16,7 @@ enum Command {
 struct PlainToRichCommand {
     #[arg(help = "Plain text file with line-end separated paths.")]
     pub plain_file: Option<String>,
-    #[arg(short='o', help = "Toml file name.")]
+    #[arg(short = 'o', help = "Toml file name.")]
     pub toml_file: Option<String>,
 }
 
@@ -23,7 +24,7 @@ struct PlainToRichCommand {
 struct RichToPlainCommand {
     #[arg(help = "Toml file name.")]
     pub toml_file: Option<String>,
-    #[arg(short='o', help = "Plain text file with line-end separated paths.")]
+    #[arg(short = 'o', help = "Plain text file with line-end separated paths.")]
     pub plain_file: Option<String>,
 }
 
@@ -37,7 +38,10 @@ fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
     println!("{:?}", parsed);
     match parsed {
-        Command::Ls(cmd) => println!("ls command! {:?}", cmd),
+        Command::Ls(cmd) => {
+            println!("{:?}", cmd);
+            ls_command(cmd.path)?;
+        }
         Command::PlainToRich(cmd) => println!("command! {:?}", cmd),
         Command::RichToPlain(cmd) => println!("command! {:?}", cmd),
     }
