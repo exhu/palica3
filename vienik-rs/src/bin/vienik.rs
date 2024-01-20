@@ -5,6 +5,26 @@ use clap::Parser;
 enum Command {
     #[command(about = "Calls 'fd -a', convenient command, use fd for more.")]
     Ls(LsCommand),
+    #[command(about = "Builds a TOML from a plain text file list.")]
+    PlainToRich(PlainToRichCommand),
+    #[command(about = "Builds a plain text file list from TOML.")]
+    RichToPlain(RichToPlainCommand),
+}
+
+#[derive(clap::Args, Debug)]
+struct PlainToRichCommand {
+    #[arg(help = "Plain text file with line-end separated paths.")]
+    pub plain_file: Option<String>,
+    #[arg(short='o', help = "Toml file name.")]
+    pub toml_file: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct RichToPlainCommand {
+    #[arg(help = "Toml file name.")]
+    pub toml_file: Option<String>,
+    #[arg(short='o', help = "Plain text file with line-end separated paths.")]
+    pub plain_file: Option<String>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -18,6 +38,8 @@ fn main() -> anyhow::Result<()> {
     println!("{:?}", parsed);
     match parsed {
         Command::Ls(cmd) => println!("ls command! {:?}", cmd),
+        Command::PlainToRich(cmd) => println!("command! {:?}", cmd),
+        Command::RichToPlain(cmd) => println!("command! {:?}", cmd),
     }
     Ok(())
 }
