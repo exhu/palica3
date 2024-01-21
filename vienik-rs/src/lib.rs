@@ -22,21 +22,31 @@ pub fn plain_to_rich_command(
     plain_file: Option<String>,
     toml_file: Option<String>,
 ) -> anyhow::Result<()> {
-
     let lines: Vec<String> = match plain_file {
-        Some(path) => {
-            std::fs::read_to_string(path)?.lines().map(|s| s.to_owned()).collect()
-        },
-        None => {
-            std::io::stdin().lines().into_iter().collect::<Result<Vec<String>,_>>()?
-        },
+        Some(path) => std::fs::read_to_string(path)?
+            .lines()
+            .map(|s| s.to_owned())
+            .collect(),
+        None => std::io::stdin()
+            .lines()
+            .into_iter()
+            .collect::<Result<Vec<String>, _>>()?,
     };
+
+    eprintln!("lines = {:?}", lines);
+    let list_items: Vec<FileListItem> = lines
+        .into_iter()
+        .map(|line| FileListItem {
+            path: line,
+            tags: None,
+        })
+        .collect();
+    let rich = RichFileList { files: list_items };
     
-    // TODO create files struct
+    // TODO toml
 
     Ok(())
 }
-
 
 /// TODO delete
 pub fn add(left: usize, right: usize) -> usize {

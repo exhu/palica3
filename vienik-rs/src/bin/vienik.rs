@@ -36,13 +36,13 @@ struct LsCommand {
 
 fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
-    println!("{:?}", parsed);
+    eprintln!("{:?}", parsed);
     match parsed {
         Command::Ls(cmd) => {
             ls_command(cmd.path)?;
         }
         Command::PlainToRich(cmd) => plain_to_rich_command(cmd.plain_file, cmd.toml_file)?,
-        Command::RichToPlain(cmd) => println!("command! {:?}", cmd),
+        Command::RichToPlain(cmd) => eprintln!("command! {:?}", cmd),
     }
 
     Ok(())

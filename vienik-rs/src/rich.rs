@@ -11,7 +11,16 @@ pub struct FileListItem {
     /// in directories, then must be a relative path to the path to the
     /// metadata TOML itself.
     pub path: String,
-    pub tags: Vec<Tag>,
+    pub tags: Option<Vec<Tag>>,
+}
+
+impl FileListItem {
+    pub fn has_tags(&self) -> bool {
+        match &self.tags {
+            Some(tags) => !tags.is_empty(),
+            None => false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
