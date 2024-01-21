@@ -93,6 +93,29 @@ from=1979-05-27
 [[filters]]
 filter="date-older"
 from=1979-05-27
+----
+
+== Sample groups file/view file section
+
+[source,toml]
+----
+
+# 'suffix-groups' allow to join related files, and on GUI display only
+# the first one based on their suffixes ('ends with'), and to perform
+# operations on the group (i.e. delete, move, assign tags to every file
+# of the group. If the first file is not found, group is discarded.
+[[suffix-groups]]
+suffixes = [".mov", ".mov.xmp"]
+case-sensitive = false
+
+[[suffix-groups]]
+suffixes = [".jpg", ".jpg.xmp", ".orf", ".orf.xmp"]
+case-sensitive = false
+
+# In case there's no jpeg file with the same name:
+[[suffix-groups]]
+suffixes = [".orf", ".orf.xmp"]
+case-sensitive = false
 
 ----
 
