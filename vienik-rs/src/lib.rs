@@ -32,13 +32,27 @@ fn lines_from_file_or_stdin(plain_file: Option<String>) -> anyhow::Result<Vec<St
     Ok(lines)
 }
 
+fn string_from_file_or_stdin(file: Option<String>) -> anyhow::Result<String> {
+    use std::io::Read;
+    let mut text = String::new();
+    match file {
+        Some(path) => {
+            text = std::fs::read_to_string(path)?;
+        }
+        None => {
+            std::io::stdin().read_to_string(&mut text)?;
+        }
+    };
+    Ok(text)
+}
+
 fn string_to_file_or_stdout(text: &str, filename: Option<String>) -> anyhow::Result<()> {
     use std::io::Write;
     match filename {
         Some(f) => {
             let mut file = std::fs::File::create(f)?;
             file.write_all(&text.as_bytes())?;
-        },
+        }
         None => std::io::stdout().write_all(&text.as_bytes())?,
     }
     Ok(())
@@ -59,9 +73,20 @@ pub fn plain_to_rich_command(
         })
         .collect();
     let rich = RichFileList { files: list_items };
-    
+
     let serialized = toml::to_string(&rich)?;
     string_to_file_or_stdout(&serialized, toml_file)?;
+    Ok(())
+}
+
+pub fn rich_to_plain_command(
+    toml_file: Option<String>,
+    plain_file: Option<String>,
+) -> anyhow::Result<()> {
+    let toml_string = string_from_file_or_stdin(toml_file)?;
+    let rich: RichFileList = toml::from_str(&toml_string)?;
+    let lines = rich.files.iter().map(|f| format!("{}\n", &f.path)).collect::<Vec<String>>();
+    string_to_file_or_stdout(&lines.join(""), plain_file)?;
     Ok(())
 }
 

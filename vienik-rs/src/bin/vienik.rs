@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
             ls_command(cmd.path)?;
         }
         Command::PlainToRich(cmd) => plain_to_rich_command(cmd.plain_file, cmd.toml_file)?,
-        Command::RichToPlain(cmd) => eprintln!("command! {:?}", cmd),
+        Command::RichToPlain(cmd) => rich_to_plain_command(cmd.toml_file, cmd.plain_file)?,
     }
 
     Ok(())
