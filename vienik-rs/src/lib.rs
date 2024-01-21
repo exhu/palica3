@@ -43,7 +43,15 @@ pub fn plain_to_rich_command(
         .collect();
     let rich = RichFileList { files: list_items };
     
-    // TODO toml
+    let serialized = toml::to_string(&rich)?;
+    use std::io::Write;
+    match toml_file {
+        Some(f) => {
+            let mut file = std::fs::File::create(f)?;
+            file.write_all(&serialized.as_bytes())?;
+        },
+        None => std::io::stdout().write_all(&serialized.as_bytes())?,
+    }
 
     Ok(())
 }
