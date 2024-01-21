@@ -18,10 +18,7 @@ pub fn ls_command(path: Option<String>) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn plain_to_rich_command(
-    plain_file: Option<String>,
-    toml_file: Option<String>,
-) -> anyhow::Result<()> {
+fn lines_from_file_or_stdin(plain_file: Option<String>) -> anyhow::Result<Vec<String>> {
     let lines: Vec<String> = match plain_file {
         Some(path) => std::fs::read_to_string(path)?
             .lines()
@@ -32,6 +29,26 @@ pub fn plain_to_rich_command(
             .into_iter()
             .collect::<Result<Vec<String>, _>>()?,
     };
+    Ok(lines)
+}
+
+fn string_to_file_or_stdout(text: &str, filename: Option<String>) -> anyhow::Result<()> {
+    use std::io::Write;
+    match filename {
+        Some(f) => {
+            let mut file = std::fs::File::create(f)?;
+            file.write_all(&text.as_bytes())?;
+        },
+        None => std::io::stdout().write_all(&text.as_bytes())?,
+    }
+    Ok(())
+}
+
+pub fn plain_to_rich_command(
+    plain_file: Option<String>,
+    toml_file: Option<String>,
+) -> anyhow::Result<()> {
+    let lines: Vec<String> = lines_from_file_or_stdin(plain_file)?;
 
     eprintln!("lines = {:?}", lines);
     let list_items: Vec<FileListItem> = lines
@@ -44,15 +61,7 @@ pub fn plain_to_rich_command(
     let rich = RichFileList { files: list_items };
     
     let serialized = toml::to_string(&rich)?;
-    use std::io::Write;
-    match toml_file {
-        Some(f) => {
-            let mut file = std::fs::File::create(f)?;
-            file.write_all(&serialized.as_bytes())?;
-        },
-        None => std::io::stdout().write_all(&serialized.as_bytes())?,
-    }
-
+    string_to_file_or_stdout(&serialized, toml_file)?;
     Ok(())
 }
 
