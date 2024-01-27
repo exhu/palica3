@@ -122,6 +122,16 @@ pub fn rich_filter_command(
         include: Option::Some(false),
     });
 
+    use toml::value::Datetime;
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::DateTimeSpan {
+            from_date_time: Option::Some(Datetime::from(toml::value::Date { year: 1980, month: 12, day: 31})),
+            to_date_time: Option::None,
+        },
+        include: Option::Some(false),
+    });
+
     let serialized = toml::to_string(&filters)?;
     string_to_file_or_stdout(&serialized, toml_file)?;
     Ok(())
