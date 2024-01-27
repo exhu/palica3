@@ -58,20 +58,20 @@ path="/mnt/asdasdsad/notags-file.jpeg"
 ----
 # select files which do not have tags added to them yet
 [[filters]]
-filter="untagged"
+filter = "Untagged"
 
-# and from those untagged select only those containing specified text:
+# include = true is implicit, if you need to exclude matched files, set to false
 [[filters]]
-filter="name-contains"
-value="some-word-or-part-of-word"
+include = true
 
-[[filters]]
-filter="path-contains"
-value="some-word-or-part-of-word"
+[filters.filter.AnyTagOf]
+tags = ["tag1", "tag2"]
 
 [[filters]]
-filter="full-path-contains"
-value="some-word-or-part-of-word"
+include = false
+
+[filters.filter.PathContains]
+value = "myname"
 
 # and from those select only from the specified day
 [[filters]]

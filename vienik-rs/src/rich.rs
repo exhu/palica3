@@ -1,4 +1,5 @@
-use serde::{Serialize, Deserialize};
+/// Config files
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct RichFileList {
@@ -11,7 +12,7 @@ pub struct FileListItem {
     /// in directories, then must be a relative path to the path to the
     /// metadata TOML itself.
     pub path: String,
-    pub tags: Option<Vec<Tag>>,
+    pub tags: Option<Vec<String>>,
 }
 
 impl FileListItem {
@@ -24,7 +25,32 @@ impl FileListItem {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Tag {
-    pub name: String,
+pub enum FilterType {
+    Any,
+    Untagged,
+    AnyTagOf {
+        tags: Vec<String>,
+    },
+    PathContains {
+        value: String,
+    },
+    PathEndsWith {
+        value: String,
+    },
+    DateTimeSpan {
+        from_date_time: Option<toml::value::Datetime>,
+        to_date_time: Option<toml::value::Datetime>,
+    },
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct FilterItem {
+    pub filter: FilterType,
+    /// include=false -> discard files matching this filter
+    pub include: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FiltersList {
+    pub filters: Vec<FilterItem>,
+}

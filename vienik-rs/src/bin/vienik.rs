@@ -57,7 +57,9 @@ fn main() -> anyhow::Result<()> {
         }
         Command::PlainToRich(cmd) => plain_to_rich_command(cmd.plain_file, cmd.toml_file)?,
         Command::RichToPlain(cmd) => rich_to_plain_command(cmd.toml_file, cmd.plain_file)?,
-        Command::RichFilter(_) => eprintln!("rich filter, TODO"),
+        Command::RichFilter(cmd) => {
+            rich_filter_command(cmd.toml_list, cmd.toml_filter, cmd.toml_sort, cmd.toml_file)?
+        }
     }
 
     Ok(())

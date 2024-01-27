@@ -85,8 +85,45 @@ pub fn rich_to_plain_command(
 ) -> anyhow::Result<()> {
     let toml_string = string_from_file_or_stdin(toml_file)?;
     let rich: RichFileList = toml::from_str(&toml_string)?;
-    let lines = rich.files.iter().map(|f| format!("{}\n", &f.path)).collect::<Vec<String>>();
+    let lines = rich
+        .files
+        .iter()
+        .map(|f| format!("{}\n", &f.path))
+        .collect::<Vec<String>>();
     string_to_file_or_stdout(&lines.join(""), plain_file)?;
+    Ok(())
+}
+
+pub fn rich_filter_command(
+    toml_list: Option<String>,
+    toml_filter: Option<String>,
+    toml_sort: Option<String>,
+    toml_file: Option<String>,
+) -> anyhow::Result<()> {
+    let mut filters = FiltersList {
+        filters: Vec::new(),
+    };
+    filters.filters.push(FilterItem {
+        filter: FilterType::Untagged,
+        include: Option::None,
+    });
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::AnyTagOf {
+            tags: vec!["tag1".to_owned(), "tag2".to_owned()],
+        },
+        include: Option::Some(true),
+    });
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::PathContains {
+            value: "myname".to_owned(),
+        },
+        include: Option::Some(false),
+    });
+
+    let serialized = toml::to_string(&filters)?;
+    string_to_file_or_stdout(&serialized, toml_file)?;
     Ok(())
 }
 
