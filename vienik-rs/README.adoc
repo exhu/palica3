@@ -73,26 +73,12 @@ include = false
 [filters.filter.PathContains]
 value = "myname"
 
-# and from those select only from the specified day
 [[filters]]
-filter="date-is"
-date=1979-05-27
+include = false
 
-# or from from the specified period
-[[filters]]
-filter="date-between"
-start=1979-05-27
-end=1979-05-28
+[filters.filter.DateTimeSpan]
+from_date_time = 1980-12-31
 
-# or from the specified day and later (the days after the specified day to now)
-[[filters]]
-filter="date-newer"
-from=1979-05-27
-
-# or from the specified day and earlier (the days preceeding the specified day)
-[[filters]]
-filter="date-older"
-from=1979-05-27
 ----
 
 == Sample groups file/view file section
