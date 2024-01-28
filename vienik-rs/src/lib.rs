@@ -1,5 +1,7 @@
-pub mod rich;
-pub use rich::*;
+mod schema;
+mod example; 
+pub use schema::*;
+pub use example::*;
 
 pub fn ls_command(path: Option<String>) -> anyhow::Result<()> {
     use std::process::Command;
@@ -100,40 +102,7 @@ pub fn rich_filter_command(
     toml_sort: Option<String>,
     toml_file: Option<String>,
 ) -> anyhow::Result<()> {
-    let mut filters = FiltersList {
-        filters: Vec::new(),
-    };
-    filters.filters.push(FilterItem {
-        filter: FilterType::Untagged,
-        include: Option::None,
-    });
-
-    filters.filters.push(FilterItem {
-        filter: FilterType::AnyTagOf {
-            tags: vec!["tag1".to_owned(), "tag2".to_owned()],
-        },
-        include: Option::Some(true),
-    });
-
-    filters.filters.push(FilterItem {
-        filter: FilterType::PathContains {
-            value: "myname".to_owned(),
-        },
-        include: Option::Some(false),
-    });
-
-    use toml::value::Datetime;
-
-    filters.filters.push(FilterItem {
-        filter: FilterType::DateTimeSpan {
-            from_date_time: Option::Some(Datetime::from(toml::value::Date { year: 1980, month: 12, day: 31})),
-            to_date_time: Option::None,
-        },
-        include: Option::Some(false),
-    });
-
-    let serialized = toml::to_string(&filters)?;
-    string_to_file_or_stdout(&serialized, toml_file)?;
+    // TODO
     Ok(())
 }
 

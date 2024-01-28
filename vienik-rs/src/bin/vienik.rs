@@ -64,6 +64,13 @@ struct LsCommand {
     pub path: Option<String>,
 }
 
+fn example(kind: ExampleKind) {
+    match kind {
+        ExampleKind::Filter => example_filter(),
+        _ => eprintln!("{:?} not implemented.", kind),
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let parsed = Command::parse();
     eprintln!("{:?}", parsed);
@@ -76,7 +83,7 @@ fn main() -> anyhow::Result<()> {
         Command::RichFilter(cmd) => {
             rich_filter_command(cmd.toml_list, cmd.toml_filter, cmd.toml_sort, cmd.toml_file)?
         },
-        Command::Example(cmd) => eprintln!("example"),
+        Command::Example(cmd) => example(cmd.kind),
     }
 
     Ok(())
