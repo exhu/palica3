@@ -12,6 +12,8 @@ enum Command {
     RichToPlain(RichToPlainCommand),
     #[command(about = "Builds a rich file list using filter and sort settings.")]
     RichFilter(RichFilterCommand),
+    #[command(about = "Prints example toml files.")]
+    Example(ExampleTomlCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -32,7 +34,7 @@ struct RichToPlainCommand {
 
 #[derive(clap::Args, Debug)]
 struct RichFilterCommand {
-    #[arg(help = "Toml list file.")]
+    #[arg(help = "Toml list file (with tags).")]
     pub toml_list: Option<String>,
     #[arg(short = 'f', help = "Toml filter file.")]
     pub toml_filter: Option<String>,
@@ -40,6 +42,20 @@ struct RichFilterCommand {
     pub toml_sort: Option<String>,
     #[arg(short = 'o', help = "Toml output file name.")]
     pub toml_file: Option<String>,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum ExampleKind {
+    List,
+    Filter,
+    Sort,
+    Group,
+}
+
+#[derive(clap::Args, Debug)]
+struct ExampleTomlCommand {
+    #[arg(help="Kind of example file")]
+    pub kind: ExampleKind,
 }
 
 #[derive(clap::Args, Debug)]
@@ -59,7 +75,8 @@ fn main() -> anyhow::Result<()> {
         Command::RichToPlain(cmd) => rich_to_plain_command(cmd.toml_file, cmd.plain_file)?,
         Command::RichFilter(cmd) => {
             rich_filter_command(cmd.toml_list, cmd.toml_filter, cmd.toml_sort, cmd.toml_file)?
-        }
+        },
+        Command::Example(cmd) => eprintln!("example"),
     }
 
     Ok(())
