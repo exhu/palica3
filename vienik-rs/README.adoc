@@ -1,6 +1,9 @@
 = Generic file management tools for fast sorting, filtering, tagging documents
 (C) 2023 Yury Benesh
 
+== TODO
+- implement filter command
+
 == Overview
 Distributed under GPLv3+ without any warranty, see link:../COPYING[].
 

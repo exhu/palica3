@@ -34,9 +34,13 @@ pub enum FilterType {
     PathContains {
         value: String,
     },
+    PathStartsWith {
+        value: String,
+    },
     PathEndsWith {
         value: String,
     },
+    // TODO use proper date types, implement serde support if none
     DateTimeSpan {
         from_date_time: Option<toml::value::Datetime>,
         to_date_time: Option<toml::value::Datetime>,
