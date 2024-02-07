@@ -40,10 +40,9 @@ pub enum FilterType {
     PathEndsWith {
         value: String,
     },
-    // TODO use proper date types, implement serde support if none
-    DateTimeSpan {
-        from_date_time: Option<toml::value::Datetime>,
-        to_date_time: Option<toml::value::Datetime>,
+    DateSpan {
+        from_date: Option<chrono::NaiveDate>,
+        to_date: Option<chrono::NaiveDate>,
     },
 }
 

@@ -23,12 +23,13 @@ pub fn example_filter() {
         action: Option::Some(FilterAction::Exclude),
     });
 
-    use toml::value::Datetime;
+    use chrono::NaiveDate;
+    let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
 
     filters.filters.push(FilterItem {
-        filter: FilterType::DateTimeSpan {
-            from_date_time: Option::Some(Datetime::from(toml::value::Date { year: 1980, month: 12, day: 31})),
-            to_date_time: Option::None,
+        filter: FilterType::DateSpan {
+            from_date: Option::Some(d),
+            to_date: Option::None,
         },
         action: Option::Some(FilterAction::Exclude),
     });
