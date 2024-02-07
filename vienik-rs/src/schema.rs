@@ -48,10 +48,16 @@ pub enum FilterType {
 }
 
 #[derive(Serialize, Deserialize)]
+pub enum FilterAction {
+    Include,
+    Exclude,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct FilterItem {
     pub filter: FilterType,
-    /// include=false -> discard files matching this filter
-    pub include: Option<bool>,
+    /// default action is Include if None
+    pub action: Option<FilterAction>,
 }
 
 #[derive(Serialize, Deserialize)]

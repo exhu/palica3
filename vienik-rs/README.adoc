@@ -65,19 +65,19 @@ filter = "Untagged"
 
 # include = true is implicit, if you need to exclude matched files, set to false
 [[filters]]
-include = true
+action = "Include"
 
 [filters.filter.AnyTagOf]
 tags = ["tag1", "tag2"]
 
 [[filters]]
-include = false
+action = "Exclude"
 
 [filters.filter.PathContains]
 value = "myname"
 
 [[filters]]
-include = false
+action = "Exclude"
 
 [filters.filter.DateTimeSpan]
 from_date_time = 1980-12-31

@@ -6,21 +6,21 @@ pub fn example_filter() {
     };
     filters.filters.push(FilterItem {
         filter: FilterType::Untagged,
-        include: Option::None,
+        action: Option::None,
     });
 
     filters.filters.push(FilterItem {
         filter: FilterType::AnyTagOf {
             tags: vec!["tag1".to_owned(), "tag2".to_owned()],
         },
-        include: Option::Some(true),
+        action: Option::Some(FilterAction::Include),
     });
 
     filters.filters.push(FilterItem {
         filter: FilterType::PathContains {
             value: "myname".to_owned(),
         },
-        include: Option::Some(false),
+        action: Option::Some(FilterAction::Exclude),
     });
 
     use toml::value::Datetime;
@@ -30,7 +30,7 @@ pub fn example_filter() {
             from_date_time: Option::Some(Datetime::from(toml::value::Date { year: 1980, month: 12, day: 31})),
             to_date_time: Option::None,
         },
-        include: Option::Some(false),
+        action: Option::Some(FilterAction::Exclude),
     });
 
     let serialized = toml::to_string(&filters).expect("failed to generate toml");
