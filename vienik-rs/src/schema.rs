@@ -46,7 +46,7 @@ pub enum FilterType {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum FilterAction {
     Include,
     Exclude,

@@ -1,7 +1,9 @@
 mod schema;
 mod example; 
+mod filter;
 pub use schema::*;
 pub use example::*;
+pub use filter::*;
 
 pub fn ls_command(path: Option<String>) -> anyhow::Result<()> {
     use std::process::Command;
