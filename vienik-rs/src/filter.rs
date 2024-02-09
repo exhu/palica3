@@ -9,15 +9,25 @@
 // - after all the chain of filters is parsed, final decision is made
 use crate::schema::*;
 
-pub fn filter_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -> FilterAction {
-    let mut action = match filter.filter
+pub enum FileItemFilterResult {
+    DoNothing,
+    Include,
+    Exclude,
+}
+
+pub fn filter_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -> FileItemFilterResult {
+    let action = match filter.filter
     {
-        FilterType::Any => filter.action.clone().unwrap_or(FilterAction::Include),
+        FilterType::Any => Some(filter.action.clone().unwrap_or(FilterAction::Include)),
         // TODO
-        _ => FilterAction::Exclude,
+        _ => None,
     };
 
-    action
+    match action {
+        None => FileItemFilterResult::DoNothing,
+        Some(FilterAction::Include) => FileItemFilterResult::Include,
+        Some(FilterAction::Exclude) => FileItemFilterResult::Exclude,
+    }
 }
 
 pub fn filter_file_item_with_filters(item: &FileListItem, filters: &FiltersList) -> FilterAction {
