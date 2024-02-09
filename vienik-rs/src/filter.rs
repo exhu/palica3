@@ -15,7 +15,7 @@ pub enum FileItemFilterResult {
     Exclude,
 }
 
-pub fn filter_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -> FileItemFilterResult {
+pub fn process_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -> FileItemFilterResult {
     let action = match filter.filter
     {
         FilterType::Any => Some(filter.action.clone().unwrap_or(FilterAction::Include)),
@@ -31,5 +31,27 @@ pub fn filter_file_item_with_filter(item: &FileListItem, filter: &FilterItem) ->
 }
 
 pub fn filter_file_item_with_filters(item: &FileListItem, filters: &FiltersList) -> FilterAction {
-    todo!();
+    filters.filters.iter().fold(FilterAction::Exclude, |prev, filter| {
+        match process_file_item_with_filter(item, &filter) {
+            FileItemFilterResult::DoNothing => prev,
+            FileItemFilterResult::Include => FilterAction::Include,
+            FileItemFilterResult::Exclude => FilterAction::Exclude,
+        }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_filters_list() {
+        // TODO
+        //assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn any_filter() {
+        // TODO
+    }
 }
