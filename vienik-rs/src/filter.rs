@@ -15,9 +15,11 @@ pub enum FileItemFilterResult {
     Exclude,
 }
 
-pub fn process_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -> FileItemFilterResult {
-    let action = match filter.filter
-    {
+pub fn process_file_item_with_filter(
+    item: &FileListItem,
+    filter: &FilterItem,
+) -> FileItemFilterResult {
+    let action = match filter.filter {
         FilterType::Any => Some(filter.action.clone().unwrap_or(FilterAction::Include)),
         // TODO
         _ => None,
@@ -31,13 +33,17 @@ pub fn process_file_item_with_filter(item: &FileListItem, filter: &FilterItem) -
 }
 
 pub fn filter_file_item_with_filters(item: &FileListItem, filters: &FiltersList) -> FilterAction {
-    filters.filters.iter().fold(FilterAction::Exclude, |prev, filter| {
-        match process_file_item_with_filter(item, &filter) {
-            FileItemFilterResult::DoNothing => prev,
-            FileItemFilterResult::Include => FilterAction::Include,
-            FileItemFilterResult::Exclude => FilterAction::Exclude,
-        }
-    })
+    filters
+        .filters
+        .iter()
+        .fold(
+            FilterAction::Exclude,
+            |prev, filter| match process_file_item_with_filter(item, &filter) {
+                FileItemFilterResult::DoNothing => prev,
+                FileItemFilterResult::Include => FilterAction::Include,
+                FileItemFilterResult::Exclude => FilterAction::Exclude,
+            },
+        )
 }
 
 #[cfg(test)]
@@ -46,12 +52,52 @@ mod tests {
 
     #[test]
     fn empty_filters_list() {
-        // TODO
-        //assert_eq!(result, 4);
+        let filters = FiltersList {
+            filters: Vec::new(),
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Option::None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Exclude
+        );
     }
 
     #[test]
     fn any_filter() {
-        // TODO
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::Any,
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Option::None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+
+    #[test]
+    fn any_filter_exclude() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::Any,
+                action: Some(FilterAction::Exclude),
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Option::None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Exclude
+        );
     }
 }
