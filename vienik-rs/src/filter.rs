@@ -20,7 +20,14 @@ pub fn process_file_item_with_filter(
     filter: &FilterItem,
 ) -> FileItemFilterResult {
     let action = match filter.filter {
-        FilterType::Any => Some(filter.action.clone().unwrap_or(FilterAction::Include)),
+        FilterType::Any => Some(filter.action_or_default()),
+        FilterType::Tagged => {
+            if item.has_tags() {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
         // TODO
         _ => None,
     };

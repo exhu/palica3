@@ -5,7 +5,7 @@ pub fn example_filter() {
         filters: Vec::new(),
     };
     filters.filters.push(FilterItem {
-        filter: FilterType::Untagged,
+        filter: FilterType::Tagged,
         action: Option::None,
     });
 

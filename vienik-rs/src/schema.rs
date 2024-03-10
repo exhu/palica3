@@ -27,7 +27,7 @@ impl FileListItem {
 #[derive(Serialize, Deserialize)]
 pub enum FilterType {
     Any,
-    Untagged,
+    Tagged,
     AnyTagOf {
         tags: Vec<String>,
     },
@@ -57,6 +57,16 @@ pub struct FilterItem {
     pub filter: FilterType,
     /// default action is Include if None
     pub action: Option<FilterAction>,
+}
+
+impl FilterItem {
+    /// unwrap action, or return default action
+    pub fn action_or_default(&self) -> FilterAction {
+        match &self.action {
+            Some(a) => a.clone(),
+            None => FilterAction::Include,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
