@@ -13,6 +13,8 @@ pub struct FileListItem {
     /// metadata TOML itself.
     pub path: String,
     pub tags: Option<Vec<String>>,
+    /// Turns out that modification date is the only attribute preserved when
+    /// copying files.
     pub mod_date: Option<chrono::NaiveDate>,
 }
 

@@ -1,6 +1,7 @@
 mod example;
 mod filter;
 mod schema;
+use chrono::Local;
 pub use example::*;
 pub use filter::*;
 pub use schema::*;
@@ -62,6 +63,21 @@ fn string_to_file_or_stdout(text: &str, filename: Option<String>) -> anyhow::Res
     Ok(())
 }
 
+fn file_mod_date(path: &str) -> Option<chrono::NaiveDate> {
+    let meta = std::path::Path::new(path).metadata();
+    match meta {
+        Ok(meta) => match meta.modified() {
+            Ok(file_date) => {
+                let dt_utc: chrono::DateTime<chrono::Utc> = file_date.into();
+                let dt_local: chrono::DateTime<Local> = dt_utc.into();
+                Some(chrono::NaiveDate::from(dt_local.date_naive()))
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 pub fn plain_to_rich_command(
     plain_file: Option<String>,
     toml_file: Option<String>,
@@ -71,10 +87,14 @@ pub fn plain_to_rich_command(
     eprintln!("lines = {:?}", lines);
     let list_items: Vec<FileListItem> = lines
         .into_iter()
-        .map(|line| FileListItem {
-            path: line,
-            tags: None,
-            mod_date: None, // TODO read file mod date?
+        .map(|line| {
+            let date = file_mod_date(&line);
+
+            FileListItem {
+                path: line,
+                tags: None,
+                mod_date: date,
+            }
         })
         .collect();
     let rich = RichFileList { files: list_items };
