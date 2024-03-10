@@ -22,6 +22,22 @@ impl FileListItem {
             None => false,
         }
     }
+
+    pub fn has_any_tag_of(&self, other_tags: &[String]) -> bool {
+        match &self.tags {
+            Some(tags) => {
+                for t in tags {
+                    for o in other_tags {
+                        if t == o {
+                            return true;
+                        }
+                    }
+                }
+            }
+            None => {}
+        }
+        false
+    }
 }
 
 #[derive(Serialize, Deserialize)]
