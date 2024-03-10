@@ -1,9 +1,9 @@
-mod schema;
-mod example; 
+mod example;
 mod filter;
-pub use schema::*;
+mod schema;
 pub use example::*;
 pub use filter::*;
+pub use schema::*;
 
 pub fn ls_command(path: Option<String>) -> anyhow::Result<()> {
     use std::process::Command;
@@ -74,6 +74,7 @@ pub fn plain_to_rich_command(
         .map(|line| FileListItem {
             path: line,
             tags: None,
+            mod_date: None, // TODO read file mod date?
         })
         .collect();
     let rich = RichFileList { files: list_items };
@@ -107,4 +108,3 @@ pub fn rich_filter_command(
     // TODO
     Ok(())
 }
-

@@ -27,10 +27,12 @@ pub fn example_filter() {
     let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
 
     filters.filters.push(FilterItem {
-        filter: FilterType::DateSpan {
-            from_date: Option::Some(d),
-            to_date: Option::None,
-        },
+        filter: FilterType::DateFrom { date: d },
+        action: Option::Some(FilterAction::Exclude),
+    });
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::DateTo { date: d },
         action: Option::Some(FilterAction::Exclude),
     });
 

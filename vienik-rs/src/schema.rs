@@ -13,6 +13,7 @@ pub struct FileListItem {
     /// metadata TOML itself.
     pub path: String,
     pub tags: Option<Vec<String>>,
+    pub mod_date: Option<chrono::NaiveDate>,
 }
 
 impl FileListItem {
@@ -38,28 +39,32 @@ impl FileListItem {
         }
         false
     }
+
+    pub fn matches_date_from(&self, from_date: chrono::NaiveDate) -> bool {
+        match self.mod_date {
+            Some(mod_date) => mod_date >= from_date,
+            None => false,
+        }
+    }
+
+    pub fn matches_date_to(&self, to_date: chrono::NaiveDate) -> bool {
+        match self.mod_date {
+            Some(mod_date) => mod_date <= to_date,
+            None => false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum FilterType {
     Any,
     Tagged,
-    AnyTagOf {
-        tags: Vec<String>,
-    },
-    PathContains {
-        value: String,
-    },
-    PathStartsWith {
-        value: String,
-    },
-    PathEndsWith {
-        value: String,
-    },
-    DateSpan {
-        from_date: Option<chrono::NaiveDate>,
-        to_date: Option<chrono::NaiveDate>,
-    },
+    AnyTagOf { tags: Vec<String> },
+    PathContains { value: String },
+    PathStartsWith { value: String },
+    PathEndsWith { value: String },
+    DateFrom { date: chrono::NaiveDate },
+    DateTo { date: chrono::NaiveDate },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]

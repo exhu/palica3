@@ -34,7 +34,21 @@ pub fn process_file_item_with_filter(
             } else {
                 None
             }
-        } //if tags.cont,
+        }
+        FilterType::DateFrom { date } => {
+            if item.matches_date_from(date.clone()) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
+        FilterType::DateTo { date } => {
+            if item.matches_date_to(date.clone()) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
         // TODO
         _ => None,
     };
@@ -72,6 +86,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Option::None,
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -90,6 +105,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Option::None,
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -108,6 +124,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Option::None,
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -126,6 +143,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -144,6 +162,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: None,
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -162,6 +181,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -182,6 +202,7 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -202,6 +223,91 @@ mod tests {
         let item = FileListItem {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Exclude
+        );
+    }
+
+    #[test]
+    fn date_from_filter_include() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::DateFrom {
+                    date: chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+
+    #[test]
+    fn date_from_filter_exclude() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::DateFrom {
+                    date: chrono::NaiveDate::from_ymd_opt(1990, 1, 2).unwrap(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Exclude
+        );
+    }
+
+    #[test]
+    fn date_to_filter_include() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::DateTo {
+                    date: chrono::NaiveDate::from_ymd_opt(1990, 1, 2).unwrap(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+
+    #[test]
+    fn date_to_filter_exclude() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::DateTo {
+                    date: chrono::NaiveDate::from_ymd_opt(1990, 1, 2).unwrap(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            mod_date: Some(chrono::NaiveDate::from_ymd_opt(1991, 1, 1).unwrap()),
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
