@@ -12,6 +12,8 @@ enum Command {
     RichToPlain(RichToPlainCommand),
     #[command(about = "Builds a rich file list using filter and sort settings.")]
     RichFilter(RichFilterCommand),
+    #[command(about = "Builds a TOML filter from a plain text file list to match paths.")]
+    PathsToFilter(PlainPathsToFilterCommand),
     #[command(about = "Prints example toml files.")]
     Example(ExampleTomlCommand),
 }
@@ -44,6 +46,14 @@ struct RichFilterCommand {
     pub toml_file: Option<String>,
 }
 
+#[derive(clap::Args, Debug)]
+struct PlainPathsToFilterCommand {
+    #[arg(help = "Plain text file with line-end separated paths.")]
+    pub plain_file: Option<String>,
+    #[arg(short = 'o', help = "Toml file name.")]
+    pub toml_file: Option<String>,
+}
+
 #[derive(clap::ValueEnum, Clone, Debug)]
 enum ExampleKind {
     List,
@@ -54,7 +64,7 @@ enum ExampleKind {
 
 #[derive(clap::Args, Debug)]
 struct ExampleTomlCommand {
-    #[arg(help="Kind of example file")]
+    #[arg(help = "Kind of example file")]
     pub kind: ExampleKind,
 }
 
@@ -82,7 +92,10 @@ fn main() -> anyhow::Result<()> {
         Command::RichToPlain(cmd) => rich_to_plain_command(cmd.toml_file, cmd.plain_file)?,
         Command::RichFilter(cmd) => {
             rich_filter_command(cmd.toml_list, cmd.toml_filter, cmd.toml_sort, cmd.toml_file)?
-        },
+        }
+        Command::PathsToFilter(cmd) => {
+            plain_paths_to_filter_command(cmd.plain_file, cmd.toml_file)?
+        }
         Command::Example(cmd) => example(cmd.kind),
     }
 

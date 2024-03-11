@@ -128,3 +128,26 @@ pub fn rich_filter_command(
     // TODO
     Ok(())
 }
+
+pub fn plain_paths_to_filter_command(
+    plain_file: Option<String>,
+    toml_file: Option<String>,
+) -> anyhow::Result<()> {
+    let lines: Vec<String> = lines_from_file_or_stdin(plain_file)?;
+
+    eprintln!("lines = {:?}", lines);
+    let list_items: Vec<FilterItem> = lines
+        .into_iter()
+        .map(|line| FilterItem {
+            filter: FilterType::PathStartsWith { text: line },
+            action: None,
+        })
+        .collect();
+    let filters = FiltersList {
+        filters: list_items,
+    };
+
+    let serialized = toml::to_string(&filters)?;
+    string_to_file_or_stdout(&serialized, toml_file)?;
+    Ok(())
+}

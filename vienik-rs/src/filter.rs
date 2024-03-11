@@ -393,4 +393,24 @@ mod tests {
             FilterAction::Include
         );
     }
+    #[test]
+    fn path_startsfull_included() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::PathStartsWith {
+                    text: "fullstring".to_owned(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("fullstring"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
 }
