@@ -196,3 +196,28 @@ pub fn plain_paths_to_filter_command(
     string_to_file_or_stdout(&serialized, toml_file)?;
     Ok(())
 }
+
+use std::collections::HashMap;
+pub fn check_paths_command(toml_file: Option<String>) -> anyhow::Result<()> {
+    let toml_string = string_from_file_or_stdin(toml_file)?;
+    let paths: RichFileList = toml::from_str(&toml_string)?;
+    let mut paths_map = HashMap::<std::path::PathBuf, String>::new();
+    for item in paths.files {
+        let path_buf = std::path::PathBuf::from(&item.path)
+            .canonicalize()
+            .expect(&format!("failed to get canonical path for {}", item.path));
+
+        if paths_map.contains_key(&path_buf) {
+            eprintln!(
+                "Duplicate path found for '{}' first mentioned as '{}':",
+                path_buf.to_string_lossy(),
+                paths_map[&path_buf]
+            );
+            println!("{}", item.path);
+        } else {
+            paths_map.insert(path_buf, item.path);
+        }
+    }
+    eprintln!("Paths checked: {}", paths_map.len());
+    Ok(())
+}

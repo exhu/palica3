@@ -16,6 +16,8 @@ enum Command {
     PathsToFilter(PlainPathsToFilterCommand),
     #[command(about = "Prints example toml files.")]
     Example(ExampleTomlCommand),
+    #[command(about = "Checks paths for being unique.")]
+    CheckPaths(CheckPathsCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -74,6 +76,12 @@ struct LsCommand {
     pub path: Option<String>,
 }
 
+#[derive(clap::Args, Debug)]
+struct CheckPathsCommand {
+    #[arg(help = "Toml file name.")]
+    pub toml_file: Option<String>,
+}
+
 fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
@@ -98,6 +106,7 @@ fn main() -> anyhow::Result<()> {
             plain_paths_to_filter_command(cmd.plain_file, cmd.toml_file)?
         }
         Command::Example(cmd) => example(cmd.kind),
+        Command::CheckPaths(cmd) => check_paths_command(cmd.toml_file)?,
     }
 
     Ok(())

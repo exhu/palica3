@@ -3,12 +3,10 @@
 :toc:
 
 == TODO
-- new command: add check for unique file names, check if the same file is addressed, 
-print duplicates
-- implement file list example command with tags
-- add grouping
 - new filter: filter non-existing files
 - new command: merge -- accept two rich lists, keep only unique files, merge tags
+- implement file list example command with tags
+- add grouping
 - code cleanup: pass only necessary structs to fn, name everything consistently
 
 == Overview
