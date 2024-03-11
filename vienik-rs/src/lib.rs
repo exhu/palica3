@@ -125,7 +125,19 @@ pub fn rich_filter_command(
     toml_sort: Option<String>,
     toml_file: Option<String>,
 ) -> anyhow::Result<()> {
-    // TODO
+    let toml_string = string_from_file_or_stdin(toml_list)?;
+    let paths: RichFileList = toml::from_str(&toml_string)?;
+    let toml_string = string_from_file_or_stdin(toml_filter)?;
+    let filters: FiltersList = toml::from_str(&toml_string)?;
+
+    let filtered_paths = filter_filelist_with_filters(paths, &filters);
+    let sorted_paths = filtered_paths;
+    // TODO sort
+    let filtered_list = RichFileList {
+        files: sorted_paths,
+    };
+    let serialized = toml::to_string(&filtered_list)?;
+    string_to_file_or_stdout(&serialized, toml_file)?;
     Ok(())
 }
 

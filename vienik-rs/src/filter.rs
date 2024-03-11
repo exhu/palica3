@@ -100,6 +100,19 @@ pub fn filter_file_item_with_filters(item: &FileListItem, filters: &FiltersList)
         )
 }
 
+pub fn filter_filelist_with_filters(
+    list: RichFileList,
+    filters: &FiltersList,
+) -> Vec<FileListItem> {
+    list.files
+        .into_iter()
+        .filter(|item| match filter_file_item_with_filters(item, filters) {
+            FilterAction::Include => true,
+            FilterAction::Exclude => false,
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

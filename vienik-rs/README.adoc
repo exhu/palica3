@@ -3,7 +3,7 @@
 :toc:
 
 == TODO
-- implement filter command
+- implement filter command sorting result
 
 == Overview
 Distributed under GPLv3+ without any warranty, see link:../COPYING[].
