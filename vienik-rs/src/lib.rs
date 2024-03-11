@@ -1,6 +1,8 @@
 mod example;
 mod filter;
 mod schema;
+use std::os::unix::fs::MetadataExt;
+
 use chrono::Local;
 pub use example::*;
 pub use filter::*;
@@ -78,6 +80,14 @@ fn file_mod_date(path: &str) -> Option<chrono::NaiveDate> {
     }
 }
 
+fn file_size(path: &str) -> Option<u64> {
+    let meta = std::path::Path::new(path).metadata();
+    match meta {
+        Ok(meta) => Some(meta.size()),
+        _ => None,
+    }
+}
+
 pub fn plain_to_rich_command(
     plain_file: Option<String>,
     toml_file: Option<String>,
@@ -89,11 +99,13 @@ pub fn plain_to_rich_command(
         .into_iter()
         .map(|line| {
             let date = file_mod_date(&line);
+            let size = file_size(&line);
 
             FileListItem {
                 path: line,
                 tags: None,
                 mod_date: date,
+                size: size,
             }
         })
         .collect();

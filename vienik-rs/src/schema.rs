@@ -16,6 +16,7 @@ pub struct FileListItem {
     /// Turns out that modification date is the only attribute preserved when
     /// copying files.
     pub mod_date: Option<chrono::NaiveDate>,
+    pub size: Option<u64>,
 }
 
 impl FileListItem {
@@ -112,4 +113,23 @@ impl FilterItem {
 #[derive(Serialize, Deserialize)]
 pub struct FiltersList {
     pub filters: Vec<FilterItem>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SortingCommands {
+    pub commands: Vec<SortingCommand>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SortingCommand {
+    pub ascending: Option<bool>,
+    pub criteria: SortingCriteria,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum SortingCriteria {
+    PathName,
+    Date,
+    Size,
+    TagsCount,
 }
