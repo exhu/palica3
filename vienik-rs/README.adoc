@@ -3,7 +3,6 @@
 :toc:
 
 == TODO
-- implement filter command sorting result
 - code cleanup: pass only necessary structs to fn, name everything consistently
 
 == Overview

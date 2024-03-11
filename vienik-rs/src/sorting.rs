@@ -7,6 +7,14 @@ pub fn sort_filelist(list: &mut [FileListItem], sorting_commands: &[SortingComma
         for s in sorting_commands {
             ordering = s.compare(a, b);
             if !ordering.is_eq() {
+                match s.ascending {
+                    None => {}
+                    Some(ascending) => {
+                        if ascending == false {
+                            ordering = ordering.reverse();
+                        }
+                    }
+                }
                 break;
             }
         }
