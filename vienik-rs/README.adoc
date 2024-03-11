@@ -4,6 +4,10 @@
 
 == TODO
 - code cleanup: pass only necessary structs to fn, name everything consistently
+- add check for unique file names, check if the same file is addressed, 
+print duplicates
+- implement file list example command with tags
+- add grouping
 
 == Overview
 Distributed under GPLv3+ without any warranty, see link:../COPYING[].
@@ -60,11 +64,10 @@ path="/mnt/asdasdsad/notags-file.jpeg"
 
 [source,toml]
 ----
-# select files which do not have tags added to them yet
-[[filters]]
-filter = "Untagged"
 
-# include = true is implicit, if you need to exclude matched files, set to false
+[[filters]]
+filter = "Tagged"
+
 [[filters]]
 action = "Include"
 
@@ -75,13 +78,38 @@ tags = ["tag1", "tag2"]
 action = "Exclude"
 
 [filters.filter.PathContains]
-value = "myname"
+text = "myname"
 
 [[filters]]
 action = "Exclude"
 
-[filters.filter.DateTimeSpan]
-from_date_time = 1980-12-31
+[filters.filter.PathStartsWith]
+text = "myname"
+
+[[filters]]
+action = "Exclude"
+
+[filters.filter.PathEndsWith]
+text = "myname"
+
+[[filters]]
+action = "Exclude"
+
+[filters.filter.PathList]
+paths = ["first-path", "second"]
+
+[[filters]]
+action = "Exclude"
+
+[filters.filter.DateFrom]
+date = "2015-06-03"
+
+[[filters]]
+action = "Exclude"
+
+[filters.filter.DateTo]
+date = "2015-06-03"
+
 
 ----
 
