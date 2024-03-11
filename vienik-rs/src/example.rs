@@ -18,7 +18,21 @@ pub fn example_filter() {
 
     filters.filters.push(FilterItem {
         filter: FilterType::PathContains {
-            value: "myname".to_owned(),
+            text: "myname".to_owned(),
+        },
+        action: Option::Some(FilterAction::Exclude),
+    });
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::PathStartsWith {
+            text: "myname".to_owned(),
+        },
+        action: Option::Some(FilterAction::Exclude),
+    });
+
+    filters.filters.push(FilterItem {
+        filter: FilterType::PathEndsWith {
+            text: "myname".to_owned(),
         },
         action: Option::Some(FilterAction::Exclude),
     });

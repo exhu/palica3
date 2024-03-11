@@ -49,8 +49,27 @@ pub fn process_file_item_with_filter(
                 None
             }
         }
-        // TODO
-        _ => None,
+        FilterType::PathContains { text } => {
+            if item.path_contains(text) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
+        FilterType::PathStartsWith { text } => {
+            if item.path_starts_with(text) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
+        FilterType::PathEndsWith { text } => {
+            if item.path_ends_with(text) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
     };
 
     match action {
@@ -312,6 +331,66 @@ mod tests {
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
             FilterAction::Exclude
+        );
+    }
+    #[test]
+    fn path_starts_included() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::PathStartsWith {
+                    text: "/mnt".to_owned(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("/mntabc"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+    #[test]
+    fn path_ends_included() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::PathEndsWith {
+                    text: "bc".to_owned(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("/mntabc"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+    #[test]
+    fn path_contains_included() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::PathContains {
+                    text: "tab".to_owned(),
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("/mntabc"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
         );
     }
 }

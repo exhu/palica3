@@ -55,6 +55,18 @@ impl FileListItem {
             None => false,
         }
     }
+
+    pub fn path_contains(&self, text: &str) -> bool {
+        self.path.contains(text)
+    }
+
+    pub fn path_starts_with(&self, text: &str) -> bool {
+        self.path.starts_with(text)
+    }
+
+    pub fn path_ends_with(&self, text: &str) -> bool {
+        self.path.ends_with(text)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -62,11 +74,11 @@ pub enum FilterType {
     Any,
     Tagged,
     AnyTagOf { tags: Vec<String> },
-    PathContains { value: String },
-    PathStartsWith { value: String },
-    PathEndsWith { value: String },
     DateFrom { date: chrono::NaiveDate },
     DateTo { date: chrono::NaiveDate },
+    PathContains { text: String },
+    PathStartsWith { text: String },
+    PathEndsWith { text: String },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]

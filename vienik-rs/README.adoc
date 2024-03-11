@@ -1,5 +1,6 @@
 = Generic file management tools for fast sorting, filtering, tagging documents
 (C) 2023 Yury Benesh
+:toc:
 
 == TODO
 - implement filter command
