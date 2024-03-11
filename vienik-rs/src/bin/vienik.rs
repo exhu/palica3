@@ -18,6 +18,8 @@ enum Command {
     Example(ExampleTomlCommand),
     #[command(about = "Checks paths for being unique.")]
     CheckPaths(CheckPathsCommand),
+    #[command(about = "Merges two rich lists: all tags are united for the same file.")]
+    Merge(MergeCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -82,6 +84,16 @@ struct CheckPathsCommand {
     pub toml_file: Option<String>,
 }
 
+#[derive(clap::Args, Debug)]
+struct MergeCommand {
+    #[arg(help = "Toml list file (with tags) A.")]
+    pub toml_list_a: Option<String>,
+    #[arg(help = "Toml list file (with tags) B.")]
+    pub toml_list_b: Option<String>,
+    #[arg(short = 'o', help = "Merged result.")]
+    pub toml_output: Option<String>,
+}
+
 fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
@@ -107,6 +119,7 @@ fn main() -> anyhow::Result<()> {
         }
         Command::Example(cmd) => example(cmd.kind),
         Command::CheckPaths(cmd) => check_paths_command(cmd.toml_file)?,
+        Command::Merge(cmd) => merge_command(cmd.toml_list_a, cmd.toml_list_b, cmd.toml_output)?,
     }
 
     Ok(())

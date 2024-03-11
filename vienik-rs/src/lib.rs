@@ -221,3 +221,15 @@ pub fn check_paths_command(toml_file: Option<String>) -> anyhow::Result<()> {
     eprintln!("Paths checked: {}", paths_map.len());
     Ok(())
 }
+
+pub fn merge_command(
+    toml_list_a: Option<String>,
+    toml_list_b: Option<String>,
+    toml_output: Option<String>,
+) -> anyhow::Result<()> {
+    if toml_list_a.is_none() && toml_list_b.is_none() {
+        return Err(anyhow::Error::msg("Specify either list a or b file name."));
+    }
+    // TODO
+    Ok(())
+}
