@@ -44,6 +44,11 @@ pub fn example_filter() {
         action: Option::Some(FilterAction::Exclude),
     });
 
+    filters.filters.push(FilterItem {
+        filter: FilterType::Accessible,
+        action: None,
+    });
+
     use chrono::NaiveDate;
     let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
 

@@ -3,7 +3,6 @@
 :toc:
 
 == TODO
-- new filter: filter non-existing files
 - new command: merge -- accept two rich lists, keep only unique files, merge tags
 - implement file list example command with tags
 - add grouping

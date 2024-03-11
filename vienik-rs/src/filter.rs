@@ -77,6 +77,14 @@ pub fn process_file_item_with_filter(
                 None
             }
         }
+        FilterType::Accessible => {
+            let path = std::path::PathBuf::from(&item.path);
+            if path.exists() {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
     };
 
     match action {

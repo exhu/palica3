@@ -84,13 +84,29 @@ impl FileListItem {
 pub enum FilterType {
     Any,
     Tagged,
-    AnyTagOf { tags: Vec<String> },
-    DateFrom { date: chrono::NaiveDate },
-    DateTo { date: chrono::NaiveDate },
-    PathContains { text: String },
-    PathStartsWith { text: String },
-    PathEndsWith { text: String },
-    PathList { paths: Vec<String> },
+    AnyTagOf {
+        tags: Vec<String>,
+    },
+    DateFrom {
+        date: chrono::NaiveDate,
+    },
+    DateTo {
+        date: chrono::NaiveDate,
+    },
+    PathContains {
+        text: String,
+    },
+    PathStartsWith {
+        text: String,
+    },
+    PathEndsWith {
+        text: String,
+    },
+    PathList {
+        paths: Vec<String>,
+    },
+    /// path exists and the user has permissions to read
+    Accessible,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
