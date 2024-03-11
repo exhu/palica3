@@ -114,30 +114,23 @@ case-sensitive = false
 
 [source,toml]
 ----
-# sort by file name only
-[[sorting]]
-sort="base-name"
 
-# sort by the full path string including the file name
-[[sorting]]
-sort="full-path"
+[[sort]]
+ascending = false
+criteria = "PathName"
 
-# by file size, descending
-[[sorting]]
-sort="size-big-first"
+[[sort]]
+criteria = "Date"
 
-[[sorting]]
-sort="size-small-first"
+[[sort]]
+criteria = "Size"
 
-[[sorting]]
-sort="date-old-first"
-
-[[sorting]]
-sort="date-new-first"
+[[sort]]
+criteria = "TagsCount"
 
 ----
 
-== Metadata files in directories
+== Metadata files in directories (not final, probably will not be implemented)
 A file "_tags.toml" contains the file list for only files in the same directory,
 and paths are relative, i.e. contain only the file name itself.
 

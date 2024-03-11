@@ -77,6 +77,7 @@ struct LsCommand {
 fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
+        ExampleKind::Sort => example_sorting(),
         _ => eprintln!("{:?} not implemented.", kind),
     }
 }

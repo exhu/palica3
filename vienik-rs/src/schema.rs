@@ -6,7 +6,7 @@ pub struct RichFileList {
     pub files: Vec<FileListItem>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct FileListItem {
     /// Generally absolute path, but if used as metadata (_tags.toml)
     /// in directories, then must be a relative path to the path to the
@@ -20,6 +20,12 @@ pub struct FileListItem {
 }
 
 impl FileListItem {
+    pub fn tags_count(&self) -> usize {
+        match &self.tags {
+            Some(tags) => tags.len(),
+            None => 0,
+        }
+    }
     pub fn has_tags(&self) -> bool {
         match &self.tags {
             Some(tags) => !tags.is_empty(),
@@ -117,13 +123,61 @@ pub struct FiltersList {
 
 #[derive(Serialize, Deserialize)]
 pub struct SortingCommands {
-    pub commands: Vec<SortingCommand>,
+    pub sort: Vec<SortingCommand>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct SortingCommand {
     pub ascending: Option<bool>,
     pub criteria: SortingCriteria,
+}
+
+use std::cmp::Ordering;
+impl SortingCommand {
+    fn compare_dates(a: &Option<chrono::NaiveDate>, b: &Option<chrono::NaiveDate>) -> Ordering {
+        if a.is_none() && b.is_none() {
+            return Ordering::Equal;
+        }
+        if a.is_none() && b.is_some() {
+            return Ordering::Greater;
+        }
+        if b.is_none() && a.is_some() {
+            return Ordering::Less;
+        }
+
+        let a = a.as_ref().unwrap();
+        let b = b.as_ref().unwrap();
+
+        a.cmp(b)
+    }
+
+    fn compare_size(a: &Option<u64>, b: &Option<u64>) -> Ordering {
+        if a.is_none() && b.is_none() {
+            return Ordering::Equal;
+        }
+
+        if a.is_none() && b.is_some() {
+            return Ordering::Greater;
+        }
+
+        if b.is_none() && a.is_some() {
+            return Ordering::Less;
+        }
+
+        let a = a.unwrap();
+        let b = b.unwrap();
+
+        a.cmp(&b)
+    }
+
+    pub fn compare(&self, a: &FileListItem, b: &FileListItem) -> Ordering {
+        match self.criteria {
+            SortingCriteria::Date => Self::compare_dates(&a.mod_date, &b.mod_date),
+            SortingCriteria::PathName => a.path.cmp(&b.path),
+            SortingCriteria::Size => Self::compare_size(&a.size, &b.size),
+            SortingCriteria::TagsCount => a.tags_count().cmp(&b.tags_count()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

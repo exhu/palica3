@@ -101,16 +101,14 @@ pub fn filter_file_item_with_filters(item: &FileListItem, filters: &FiltersList)
 }
 
 pub fn filter_filelist_with_filters(
-    list: RichFileList,
+    list: impl Iterator<Item = FileListItem>,
     filters: &FiltersList,
 ) -> Vec<FileListItem> {
-    list.files
-        .into_iter()
-        .filter(|item| match filter_file_item_with_filters(item, filters) {
-            FilterAction::Include => true,
-            FilterAction::Exclude => false,
-        })
-        .collect()
+    list.filter(|item| match filter_file_item_with_filters(item, filters) {
+        FilterAction::Include => true,
+        FilterAction::Exclude => false,
+    })
+    .collect()
 }
 
 #[cfg(test)]
@@ -126,6 +124,7 @@ mod tests {
             path: String::from("abc"),
             tags: Option::None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -145,6 +144,7 @@ mod tests {
             path: String::from("abc"),
             tags: Option::None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -164,6 +164,7 @@ mod tests {
             path: String::from("abc"),
             tags: Option::None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -183,6 +184,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -202,6 +204,7 @@ mod tests {
             path: String::from("abc"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -221,6 +224,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -242,6 +246,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -263,6 +268,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -284,6 +290,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -305,6 +312,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -326,6 +334,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -347,6 +356,7 @@ mod tests {
             path: String::from("abc"),
             tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1991, 1, 1).unwrap()),
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -367,6 +377,7 @@ mod tests {
             path: String::from("/mntabc"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -387,6 +398,7 @@ mod tests {
             path: String::from("/mntabc"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -407,6 +419,7 @@ mod tests {
             path: String::from("/mntabc"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -427,6 +440,7 @@ mod tests {
             path: String::from("fullstring"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -447,6 +461,7 @@ mod tests {
             path: String::from("fullstring"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -456,6 +471,7 @@ mod tests {
             path: String::from("abc"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),
@@ -465,6 +481,7 @@ mod tests {
             path: String::from("zxf"),
             tags: None,
             mod_date: None,
+            size: None,
         };
         assert_eq!(
             filter_file_item_with_filters(&item, &filters),

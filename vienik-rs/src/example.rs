@@ -60,3 +60,28 @@ pub fn example_filter() {
     let serialized = toml::to_string(&filters).expect("failed to generate toml");
     println!("{serialized}");
 }
+
+pub fn example_sorting() {
+    let sorting = SortingCommands {
+        sort: vec![
+            SortingCommand {
+                ascending: Some(false),
+                criteria: SortingCriteria::PathName,
+            },
+            SortingCommand {
+                ascending: None,
+                criteria: SortingCriteria::Date,
+            },
+            SortingCommand {
+                ascending: None,
+                criteria: SortingCriteria::Size,
+            },
+            SortingCommand {
+                ascending: None,
+                criteria: SortingCriteria::TagsCount,
+            },
+        ],
+    };
+    let serialized = toml::to_string(&sorting).expect("failed to generate toml");
+    println!("{serialized}");
+}

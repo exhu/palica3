@@ -1,12 +1,14 @@
 mod example;
 mod filter;
 mod schema;
+mod sorting;
 use std::os::unix::fs::MetadataExt;
 
 use chrono::Local;
 pub use example::*;
 pub use filter::*;
 pub use schema::*;
+pub use sorting::*;
 
 pub fn ls_command(path: Option<String>) -> anyhow::Result<()> {
     use std::process::Command;
@@ -139,14 +141,36 @@ pub fn rich_filter_command(
 ) -> anyhow::Result<()> {
     let toml_string = string_from_file_or_stdin(toml_list)?;
     let paths: RichFileList = toml::from_str(&toml_string)?;
-    let toml_string = string_from_file_or_stdin(toml_filter)?;
-    let filters: FiltersList = toml::from_str(&toml_string)?;
 
-    let filtered_paths = filter_filelist_with_filters(paths, &filters);
-    let sorted_paths = filtered_paths;
-    // TODO sort
+    let filters: FiltersList;
+    match toml_filter {
+        Some(toml_filter) => {
+            let toml_string = std::fs::read_to_string(toml_filter)?;
+            filters = toml::from_str(&toml_string)?;
+        }
+        None => {
+            filters = FiltersList {
+                filters: vec![FilterItem {
+                    filter: FilterType::Any,
+                    action: None,
+                }],
+            }
+        }
+    }
+
+    let sorting: SortingCommands;
+    match toml_sort {
+        Some(toml_sort) => {
+            let toml_string = std::fs::read_to_string(toml_sort)?;
+            sorting = toml::from_str(&toml_string)?;
+        }
+        None => sorting = SortingCommands { sort: Vec::new() },
+    }
+
+    let mut filtered_paths = filter_filelist_with_filters(paths.files.into_iter(), &filters);
+    sort_filelist(&mut filtered_paths, &sorting.sort);
     let filtered_list = RichFileList {
-        files: sorted_paths,
+        files: filtered_paths,
     };
     let serialized = toml::to_string(&filtered_list)?;
     string_to_file_or_stdout(&serialized, toml_file)?;
