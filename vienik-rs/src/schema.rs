@@ -67,6 +67,10 @@ impl FileListItem {
     pub fn path_ends_with(&self, text: &str) -> bool {
         self.path.ends_with(text)
     }
+
+    pub fn path_in_list(&self, list: &[String]) -> bool {
+        list.contains(&self.path)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -79,6 +83,7 @@ pub enum FilterType {
     PathContains { text: String },
     PathStartsWith { text: String },
     PathEndsWith { text: String },
+    PathList { paths: Vec<String> },
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]

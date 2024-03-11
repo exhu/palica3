@@ -136,15 +136,12 @@ pub fn plain_paths_to_filter_command(
     let lines: Vec<String> = lines_from_file_or_stdin(plain_file)?;
 
     eprintln!("lines = {:?}", lines);
-    let list_items: Vec<FilterItem> = lines
-        .into_iter()
-        .map(|line| FilterItem {
-            filter: FilterType::PathStartsWith { text: line },
-            action: None,
-        })
-        .collect();
+
     let filters = FiltersList {
-        filters: list_items,
+        filters: vec![FilterItem {
+            filter: FilterType::PathList { paths: lines },
+            action: None,
+        }],
     };
 
     let serialized = toml::to_string(&filters)?;

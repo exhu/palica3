@@ -70,6 +70,13 @@ pub fn process_file_item_with_filter(
                 None
             }
         }
+        FilterType::PathList { paths } => {
+            if item.path_in_list(paths) {
+                Some(filter.action_or_default())
+            } else {
+                None
+            }
+        }
     };
 
     match action {
@@ -405,6 +412,44 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("fullstring"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+    }
+    #[test]
+    fn path_list_included() {
+        let filters = FiltersList {
+            filters: vec![FilterItem {
+                filter: FilterType::PathList {
+                    paths: vec!["abc".to_owned(), "zxf".to_owned()],
+                },
+                action: None,
+            }],
+        };
+        let item = FileListItem {
+            path: String::from("fullstring"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Exclude
+        );
+        let item = FileListItem {
+            path: String::from("abc"),
+            tags: None,
+            mod_date: None,
+        };
+        assert_eq!(
+            filter_file_item_with_filters(&item, &filters),
+            FilterAction::Include
+        );
+        let item = FileListItem {
+            path: String::from("zxf"),
             tags: None,
             mod_date: None,
         };
