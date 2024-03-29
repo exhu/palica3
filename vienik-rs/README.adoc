@@ -7,6 +7,7 @@
 - implement file list example command with tags
 - add grouping
 - code cleanup: pass only necessary structs to fn, name everything consistently
+- make symbolic links
 
 == Overview
 Distributed under GPLv3+ without any warranty, see link:../COPYING[].
