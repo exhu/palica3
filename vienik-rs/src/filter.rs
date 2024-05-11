@@ -8,6 +8,7 @@
 // - if not matches -> keep previous state
 // - after all the chain of filters is parsed, final decision is made
 use crate::schema::*;
+use std::collections::HashSet;
 
 pub enum FileItemFilterResult {
     DoNothing,
@@ -190,7 +191,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: None,
             size: None,
         };
@@ -230,7 +231,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: None,
             size: None,
         };
@@ -252,7 +253,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: None,
             size: None,
         };
@@ -274,7 +275,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: None,
             size: None,
         };
@@ -296,7 +297,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
             size: None,
         };
@@ -318,7 +319,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
             size: None,
         };
@@ -340,7 +341,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
             size: None,
         };
@@ -362,7 +363,7 @@ mod tests {
         };
         let item = FileListItem {
             path: String::from("abc"),
-            tags: Some(vec!["tag1".to_owned(), "other".to_owned()]),
+            tags: Some(HashSet::from(["tag1".to_owned(), "other".to_owned()])),
             mod_date: Some(chrono::NaiveDate::from_ymd_opt(1991, 1, 1).unwrap()),
             size: None,
         };

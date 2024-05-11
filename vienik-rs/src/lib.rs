@@ -128,7 +128,7 @@ pub fn rich_to_plain_command(
     let rich: RichFileList = toml::from_str(&toml_string)?;
     let lines = rich
         .files
-        .iter()
+        .into_iter()
         .map(|f| format!("{}\n", &f.path))
         .collect::<Vec<String>>();
     string_to_file_or_stdout(&lines.join(""), plain_file)?;
@@ -303,4 +303,34 @@ pub fn merge_command(
     let serialized = toml::to_string(&merged)?;
     string_to_file_or_stdout(&serialized, toml_output)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{FileListItem, RichFileList};
+
+    #[test]
+    fn test_merge_list() {
+        let list_a = RichFileList {
+            files: vec![
+                FileListItem::new("duplicate".to_owned()),
+                FileListItem::new_with_tags(
+                    "duplicate".to_owned(),
+                    vec!["cat".to_owned(), "dog".to_owned()],
+                ),
+                FileListItem::new_with_tags("duplicate".to_owned(), vec!["fox".to_owned()]),
+            ],
+        };
+        let merged = merge_rich_lists(list_a, None);
+        assert_eq!(merged.files.len(), 1);
+        assert_eq!(
+            merged.files.get(0).unwrap().tags,
+            Some(HashSet::from([
+                "fox".to_owned(),
+                "cat".to_owned(),
+                "dog".to_owned()
+            ]))
+        );
+    }
 }

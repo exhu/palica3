@@ -27,6 +27,24 @@ pub struct FileListItem {
 }
 
 impl FileListItem {
+    pub fn new(path: String) -> FileListItem {
+        FileListItem {
+            path,
+            tags: None,
+            mod_date: None,
+            size: None,
+        }
+    }
+
+    pub fn new_with_tags(path: String, tags: Vec<String>) -> FileListItem {
+        FileListItem {
+            path,
+            tags: Some(tags.into_iter().collect::<HashSet<String>>()),
+            mod_date: None,
+            size: None,
+        }
+    }
+
     pub fn tags_count(&self) -> usize {
         match &self.tags {
             Some(tags) => tags.len(),
