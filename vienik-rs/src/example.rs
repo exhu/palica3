@@ -1,3 +1,5 @@
+use chrono::NaiveDate;
+
 use crate::*;
 
 pub fn example_filter() {
@@ -88,5 +90,28 @@ pub fn example_sorting() {
         ],
     };
     let serialized = toml::to_string(&sorting).expect("failed to generate toml");
+    println!("{serialized}");
+}
+
+pub fn example_list() {
+    let mut item = FileListItem::new_with_tags(
+        "/original".to_owned(),
+        vec!["banana".to_owned(), "apple".to_owned()],
+    );
+    item.mod_date = Some(NaiveDate::from_ymd_opt(1991, 06, 07).unwrap());
+    item.size = Some(123456);
+
+    let list = RichFileList {
+        files: vec![
+            FileListItem::new("duplicate".to_owned()),
+            FileListItem::new_with_tags(
+                "duplicate".to_owned(),
+                vec!["cat".to_owned(), "dog".to_owned()],
+            ),
+            FileListItem::new_with_tags("duplicate".to_owned(), vec!["fox".to_owned()]),
+            item,
+        ],
+    };
+    let serialized = toml::to_string(&list).expect("failed to generate toml");
     println!("{serialized}");
 }

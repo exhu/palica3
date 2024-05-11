@@ -98,6 +98,8 @@ fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
         ExampleKind::Sort => example_sorting(),
+        ExampleKind::List => example_list(),
+
         _ => eprintln!("{:?} not implemented.", kind),
     }
 }
