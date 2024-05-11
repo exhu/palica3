@@ -333,4 +333,37 @@ mod tests {
             ]))
         );
     }
+
+    #[test]
+    fn test_merge_lists() {
+        let list_a = RichFileList {
+            files: vec![
+                FileListItem::new("duplicate".to_owned()),
+                FileListItem::new_with_tags(
+                    "duplicate".to_owned(),
+                    vec!["cat".to_owned(), "dog".to_owned()],
+                ),
+            ],
+        };
+        let list_b = RichFileList {
+            files: vec![
+                FileListItem::new("duplicate".to_owned()),
+                FileListItem::new_with_tags(
+                    "duplicate".to_owned(),
+                    vec!["cat".to_owned(), "dog".to_owned()],
+                ),
+                FileListItem::new_with_tags("duplicate".to_owned(), vec!["fox".to_owned()]),
+            ],
+        };
+        let merged = merge_rich_lists(list_a, Some(list_b));
+        assert_eq!(merged.files.len(), 1);
+        assert_eq!(
+            merged.files.get(0).unwrap().tags,
+            Some(HashSet::from([
+                "fox".to_owned(),
+                "cat".to_owned(),
+                "dog".to_owned()
+            ]))
+        );
+    }
 }
