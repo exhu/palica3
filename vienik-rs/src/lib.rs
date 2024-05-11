@@ -245,10 +245,10 @@ fn merge_tags(
     }
 }
 
-fn merge_rich_list_dupes(list_a: RichFileList) -> HashMap<String, FileListItem> {
+fn merge_rich_list_dupes(list_a: Vec<FileListItem>) -> HashMap<String, FileListItem> {
     let mut result = HashMap::<String, FileListItem>::new();
 
-    for item in list_a.files {
+    for item in list_a {
         match result.get(&item.path) {
             Some(old) => {
                 let mut new_item = item.clone();
@@ -265,27 +265,28 @@ fn merge_rich_list_dupes(list_a: RichFileList) -> HashMap<String, FileListItem> 
 }
 
 fn merge_rich_lists(list_a: RichFileList, list_b: Option<RichFileList>) -> RichFileList {
-    let merged_a = merge_rich_list_dupes(list_a);
-
-    todo!()
-    // TODO merge vectors, then merger_rich_list_dupes
-
-    /*
     match list_b {
         None => RichFileList {
-            files: merged_a.into_iter().map(|v| v.1).collect(),
+            files: merge_rich_list_dupes(list_a.files)
+                .into_iter()
+                .map(|v| v.1)
+                .collect(),
         },
         Some(list_b) => {
-            let mut merged_b = merge_rich_list_dupes(list_b);
-            for i in merged_a {
-                merged_b.insert
-            }
+            let concated = list_a
+                .files
+                .into_iter()
+                .chain(list_b.files.into_iter())
+                .collect();
+
             RichFileList {
-                files: merged_a.into_iter().map(|v| v.1).collect(),
+                files: merge_rich_list_dupes(concated)
+                    .into_iter()
+                    .map(|v| v.1)
+                    .collect(),
             }
         }
     }
-    */
 }
 
 pub fn merge_command(
@@ -294,6 +295,12 @@ pub fn merge_command(
     toml_output: Option<String>,
 ) -> anyhow::Result<()> {
     let list_a = rich_from_file(&PathBuf::from(&toml_list_a))?;
-    // TODO
+    let list_b = match toml_list_b {
+        None => None,
+        Some(list_b_path) => Some(rich_from_file(&PathBuf::from(&list_b_path))?),
+    };
+    let merged = merge_rich_lists(list_a, list_b);
+    let serialized = toml::to_string(&merged)?;
+    string_to_file_or_stdout(&serialized, toml_output)?;
     Ok(())
 }

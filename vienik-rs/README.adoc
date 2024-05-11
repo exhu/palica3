@@ -3,7 +3,7 @@
 :toc:
 
 == TODO
-- new command: merge -- accept two rich lists, keep only unique files, merge tags
+- test new command: merge -- accept two rich lists, keep only unique files, merge tags
 - implement file list example command with tags
 - add grouping
 - code cleanup: pass only necessary structs to fn, name everything consistently
