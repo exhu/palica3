@@ -1,9 +1,16 @@
 /// Config files
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize)]
 pub struct RichFileList {
     pub files: Vec<FileListItem>,
+}
+
+impl RichFileList {
+    pub fn new() -> RichFileList {
+        RichFileList { files: Vec::new() }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -12,7 +19,7 @@ pub struct FileListItem {
     /// in directories, then must be a relative path to the path to the
     /// metadata TOML itself.
     pub path: String,
-    pub tags: Option<Vec<String>>,
+    pub tags: Option<HashSet<String>>,
     /// Turns out that modification date is the only attribute preserved when
     /// copying files.
     pub mod_date: Option<chrono::NaiveDate>,

@@ -2,7 +2,9 @@ mod example;
 mod filter;
 mod schema;
 mod sorting;
+use std::collections::{HashMap, HashSet};
 use std::os::unix::fs::MetadataExt;
+use std::path::{Path, PathBuf};
 
 use chrono::Local;
 pub use example::*;
@@ -197,7 +199,12 @@ pub fn plain_paths_to_filter_command(
     Ok(())
 }
 
-use std::collections::HashMap;
+fn rich_from_file(path: &Path) -> anyhow::Result<RichFileList> {
+    let text = std::fs::read_to_string(path)?;
+    let paths: RichFileList = toml::from_str(&text)?;
+    Ok(paths)
+}
+
 pub fn check_paths_command(toml_file: Option<String>) -> anyhow::Result<()> {
     let toml_string = string_from_file_or_stdin(toml_file)?;
     let paths: RichFileList = toml::from_str(&toml_string)?;
@@ -222,14 +229,71 @@ pub fn check_paths_command(toml_file: Option<String>) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn merge_tags(
+    tags_a: Option<HashSet<String>>,
+    tags_b: Option<HashSet<String>>,
+) -> Option<HashSet<String>> {
+    match tags_a {
+        None => match tags_b {
+            None => None,
+            Some(_) => tags_b,
+        },
+        Some(set_a) => match tags_b {
+            None => Some(set_a),
+            Some(set_b) => Some(set_a.union(&set_b).map(String::clone).collect()),
+        },
+    }
+}
+
+fn merge_rich_list_dupes(list_a: RichFileList) -> HashMap<String, FileListItem> {
+    let mut result = HashMap::<String, FileListItem>::new();
+
+    for item in list_a.files {
+        match result.get(&item.path) {
+            Some(old) => {
+                let mut new_item = item.clone();
+                new_item.tags = merge_tags(item.tags, old.tags.clone());
+                result.insert(item.path.clone(), new_item);
+            }
+            None => {
+                result.insert(item.path.clone(), item);
+            }
+        }
+    }
+
+    result
+}
+
+fn merge_rich_lists(list_a: RichFileList, list_b: Option<RichFileList>) -> RichFileList {
+    let merged_a = merge_rich_list_dupes(list_a);
+
+    todo!()
+    // TODO merge vectors, then merger_rich_list_dupes
+
+    /*
+    match list_b {
+        None => RichFileList {
+            files: merged_a.into_iter().map(|v| v.1).collect(),
+        },
+        Some(list_b) => {
+            let mut merged_b = merge_rich_list_dupes(list_b);
+            for i in merged_a {
+                merged_b.insert
+            }
+            RichFileList {
+                files: merged_a.into_iter().map(|v| v.1).collect(),
+            }
+        }
+    }
+    */
+}
+
 pub fn merge_command(
-    toml_list_a: Option<String>,
+    toml_list_a: String,
     toml_list_b: Option<String>,
     toml_output: Option<String>,
 ) -> anyhow::Result<()> {
-    if toml_list_a.is_none() && toml_list_b.is_none() {
-        return Err(anyhow::Error::msg("Specify either list a or b file name."));
-    }
+    let list_a = rich_from_file(&PathBuf::from(&toml_list_a))?;
     // TODO
     Ok(())
 }

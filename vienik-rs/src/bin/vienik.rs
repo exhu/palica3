@@ -87,7 +87,7 @@ struct CheckPathsCommand {
 #[derive(clap::Args, Debug)]
 struct MergeCommand {
     #[arg(help = "Toml list file (with tags) A.")]
-    pub toml_list_a: Option<String>,
+    pub toml_list_a: String,
     #[arg(help = "Toml list file (with tags) B.")]
     pub toml_list_b: Option<String>,
     #[arg(short = 'o', help = "Merged result.")]
