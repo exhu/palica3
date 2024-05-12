@@ -248,3 +248,40 @@ impl SuffixGroup {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResults {
+    pub items: Vec<CompareResultItem>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResultItemPaths {
+    pub path_a: String,
+    pub path_b: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResultItemTags {
+    pub tags_a: Vec<String>,
+    pub tags_b: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResultItemModDates {
+    pub mod_date_a: Option<chrono::NaiveDate>,
+    pub mod_date_b: Option<chrono::NaiveDate>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResultItemSizes {
+    pub size_a: Option<u64>,
+    pub size_b: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CompareResultItem {
+    pub paths: Option<CompareResultItemPaths>,
+    pub tags: Option<CompareResultItemTags>,
+    pub mod_date: Option<CompareResultItemModDates>,
+    pub size: Option<CompareResultItemSizes>,
+}

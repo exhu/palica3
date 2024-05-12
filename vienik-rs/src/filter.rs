@@ -8,7 +8,6 @@
 // - if not matches -> keep previous state
 // - after all the chain of filters is parsed, final decision is made
 use crate::schema::*;
-use std::collections::HashSet;
 
 pub enum FileItemFilterResult {
     DoNothing,
@@ -123,6 +122,7 @@ pub fn filter_filelist_with_filters(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn empty_filters_list() {

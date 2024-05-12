@@ -30,6 +30,12 @@ enum Command {
         about = "Merges two rich lists as in 'merge' command, but only second list's files are kept."
     )]
     Update(UpdateCommand),
+    #[command(about = "Collectes used tags from the rich list.")]
+    DumpTags(DumpTagsCommand),
+    #[command(about = "Compares two rich lists, displays difference as toml.")]
+    Compare(CompareCommand),
+    #[command(about = "Merges tags for files matching suffix groups.")]
+    MergeTagsInGroups(MergeTagsInGroupsCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -127,6 +133,36 @@ struct UpdateCommand {
     pub toml_output: Option<String>,
 }
 
+#[derive(clap::Args, Debug)]
+struct CompareCommand {
+    #[arg(help = "Old toml list file (with tags) A.")]
+    pub toml_list_a: String,
+    #[arg(help = "New toml list file (with tags) B.")]
+    pub toml_list_b: String,
+    #[arg(short = 'o', help = "Formatted result.")]
+    pub toml_output: Option<String>,
+    #[arg(short = 'i', help = "Ignore tags.", default_value_t = false)]
+    pub ignore_tags: bool,
+}
+
+#[derive(clap::Args, Debug)]
+struct DumpTagsCommand {
+    #[arg(help = "Toml file name.")]
+    pub toml_file: Option<String>,
+    #[arg(short = 'o', help = "Plain text file with line-end separated tags.")]
+    pub plain_file: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct MergeTagsInGroupsCommand {
+    #[arg(help = "Toml list file (with tags).")]
+    pub toml_list_a: String,
+    #[arg(help = "Groups list file.")]
+    pub toml_groups: Option<String>,
+    #[arg(short = 'o', help = "Merged list result.")]
+    pub toml_output: Option<String>,
+}
+
 fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
@@ -154,8 +190,16 @@ fn main() -> anyhow::Result<()> {
         Command::Example(cmd) => example(cmd.kind),
         Command::CheckPaths(cmd) => check_paths_command(cmd.toml_file)?,
         Command::Merge(cmd) => merge_command(cmd.toml_list_a, cmd.toml_list_b, cmd.toml_output)?,
+        // TODO
         Command::Intersect(_cmd) => eprintln!("not implemented"),
+        // TODO
         Command::Update(_cmd) => eprintln!("not implemented"),
+        // TODO
+        Command::DumpTags(_cmd) => eprintln!("not implemented"),
+        // TODO
+        Command::Compare(_cmd) => eprintln!("not implemented"),
+        // TODO
+        Command::MergeTagsInGroups(_cmd) => eprintln!("not implemented"),
     }
 
     Ok(())
