@@ -99,8 +99,7 @@ fn example(kind: ExampleKind) {
         ExampleKind::Filter => example_filter(),
         ExampleKind::Sort => example_sorting(),
         ExampleKind::List => example_list(),
-
-        _ => eprintln!("{:?} not implemented.", kind),
+        ExampleKind::Group => example_groups(),
     }
 }
 

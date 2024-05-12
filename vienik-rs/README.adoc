@@ -3,11 +3,12 @@
 :toc:
 
 == TODO
-- test new command: merge -- accept two rich lists, keep only unique files, merge tags
-- implement file list example command with tags
-- add grouping
+- merge lists via intersection: old list + new list -> merge tags, remove files
+not in both lists
+- add grouping -- merge tags by suffix group
 - code cleanup: pass only necessary structs to fn, name everything consistently
 - make symbolic links
+- make clean public interfaces for the library to be used by db app
 
 == Overview
 Distributed under GPLv3+ without any warranty, see link:../COPYING[].
@@ -18,7 +19,6 @@ preview, and process. Generated metadata is meant to be easily passed to other
 programs for processing.
 
 == Functions
-
 * Build a plain text file containing a file list (one path by line).
 * Build rich (TOML) format file lists to enable labeling files with metadata
 (tags).

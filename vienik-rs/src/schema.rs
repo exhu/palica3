@@ -228,3 +228,23 @@ pub enum SortingCriteria {
     Size,
     TagsCount,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SuffixGroups {
+    pub suffix_groups: Vec<SuffixGroup>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SuffixGroup {
+    pub suffixes: Vec<String>,
+    pub case_sensitive: bool,
+}
+
+impl SuffixGroup {
+    pub fn new(suffixes: Vec<String>) -> SuffixGroup {
+        SuffixGroup {
+            suffixes,
+            case_sensitive: false,
+        }
+    }
+}

@@ -115,3 +115,15 @@ pub fn example_list() {
     let serialized = toml::to_string(&list).expect("failed to generate toml");
     println!("{serialized}");
 }
+
+pub fn example_groups() {
+    let groups = SuffixGroups {
+        suffix_groups: vec![
+            SuffixGroup::new(vec![".jpg".into(), ".orf".into()]),
+            SuffixGroup::new(vec![".jpg".into(), ".cr2".into()]),
+        ],
+    };
+
+    let serialized = toml::to_string(&groups).expect("failed to generate toml");
+    println!("{serialized}");
+}
