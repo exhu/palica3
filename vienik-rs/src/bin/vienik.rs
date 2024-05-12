@@ -18,8 +18,18 @@ enum Command {
     Example(ExampleTomlCommand),
     #[command(about = "Checks paths for being unique.")]
     CheckPaths(CheckPathsCommand),
-    #[command(about = "Merges two rich lists: all tags are united for the same file.")]
+    #[command(
+        about = "Merges one or two rich lists: all tags are united for the same file, duplicate entries are merged keeping all the tags."
+    )]
     Merge(MergeCommand),
+    #[command(
+        about = "Merges two rich lists as in 'merge' command, but only files in both lists are kept."
+    )]
+    Intersect(IntersectCommand),
+    #[command(
+        about = "Merges two rich lists as in 'merge' command, but only second list's files are kept."
+    )]
+    Update(UpdateCommand),
 }
 
 #[derive(clap::Args, Debug)]
@@ -94,6 +104,29 @@ struct MergeCommand {
     pub toml_output: Option<String>,
 }
 
+#[derive(clap::Args, Debug)]
+struct IntersectCommand {
+    #[arg(help = "Toml list file (with tags) A.")]
+    pub toml_list_a: String,
+    #[arg(help = "Toml list file (with tags) B.")]
+    pub toml_list_b: String,
+    #[arg(short = 'o', help = "Merged (via intersection) result.")]
+    pub toml_output: Option<String>,
+}
+
+#[derive(clap::Args, Debug)]
+struct UpdateCommand {
+    #[arg(help = "Old toml list file (with tags) A.")]
+    pub toml_list_a: String,
+    #[arg(help = "New toml list file (with tags) B.")]
+    pub toml_list_b: String,
+    #[arg(
+        short = 'o',
+        help = "Merged (via intersection, then union) result. Files not in list B will be removed."
+    )]
+    pub toml_output: Option<String>,
+}
+
 fn example(kind: ExampleKind) {
     match kind {
         ExampleKind::Filter => example_filter(),
@@ -121,6 +154,8 @@ fn main() -> anyhow::Result<()> {
         Command::Example(cmd) => example(cmd.kind),
         Command::CheckPaths(cmd) => check_paths_command(cmd.toml_file)?,
         Command::Merge(cmd) => merge_command(cmd.toml_list_a, cmd.toml_list_b, cmd.toml_output)?,
+        Command::Intersect(_cmd) => eprintln!("not implemented"),
+        Command::Update(_cmd) => eprintln!("not implemented"),
     }
 
     Ok(())

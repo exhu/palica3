@@ -1,10 +1,11 @@
 = Generic file management tools for fast sorting, filtering, tagging documents
-(C) 2023 Yury Benesh
+(C) 2023-2024 Yury Benesh
 :toc:
 
 == TODO
 - merge lists via intersection: old list + new list -> merge tags, remove files
 not in both lists
+- merge lists as update: shortcut to intersection, then union (merge command)
 - add grouping -- merge tags by suffix group
 - code cleanup: pass only necessary structs to fn, name everything consistently
 - make symbolic links
